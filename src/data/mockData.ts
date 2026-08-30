@@ -26,7 +26,13 @@ export const LANGUAGES: LanguageOption[] = [
   { code: 'ur', label: 'Urdu', nativeLabel: 'اُردُو' },
 ];
 
-export const INITIAL_ARTISAN: ArtisanProfile = {
+export interface ArtisanProfileWithAuth extends ArtisanProfile {
+  mobile?: string;
+  email?: string;
+  recentPhotos?: string[];
+}
+
+export const INITIAL_ARTISAN: ArtisanProfile & { mobile?: string; email?: string; recentPhotos?: string[] } = {
   name: 'Ranjit Prajapati',
   title: 'Master Clay Sculptor & Potter',
   location: 'Varanasi, Uttar Pradesh',
@@ -38,6 +44,13 @@ export const INITIAL_ARTISAN: ArtisanProfile = {
   gemVerified: true,
   storyQuote: 'Every lump of earth holds a song that only patient hands can uncover.',
   bio: 'Third-generation terracotta artisan shaping sustainable earthenware, temple lamps, and bespoke architectural murals with local riverbed clay.',
+  mobile: '9876543210',
+  email: '',
+  recentPhotos: [
+    'https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?w=600&auto=format&fit=crop&q=80',
+    'https://images.unsplash.com/photo-1578749556568-bc2c40e68b61?w=600&auto=format&fit=crop&q=80',
+    'https://images.unsplash.com/photo-1612196808214-b8e1d6145a8c?w=600&auto=format&fit=crop&q=80',
+  ],
 };
 
 export const INITIAL_PRODUCTS: ProductItem[] = [
@@ -45,7 +58,7 @@ export const INITIAL_PRODUCTS: ProductItem[] = [
     id: 'prod-1',
     title: 'Handcrafted Red Terracotta Urli Vase',
     category: 'Pottery',
-    rawImageUrl: 'https://images.unsplash.com/photo-1578749556568-bc2c40e68b61?w=800&auto=format&fit=crop&q=80',
+    rawImageUrl: 'https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?w=800&auto=format&fit=crop&q=80',
     polishedImageUrl: 'https://images.unsplash.com/photo-1612196808214-b8e1d6145a8c?w=800&auto=format&fit=crop&q=80',
     price: 1200,
     originalPrice: 1500,
@@ -64,10 +77,10 @@ export const INITIAL_PRODUCTS: ProductItem[] = [
     title: 'Banarasi Zari Handloom Silk Saree',
     category: 'Weaving',
     rawImageUrl: 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=800&auto=format&fit=crop&q=80',
-    polishedImageUrl: 'https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?w=800&auto=format&fit=crop&q=80',
+    polishedImageUrl: 'https://images.unsplash.com/photo-1617627143750-d86bc21e42bb?w=800&auto=format&fit=crop&q=80',
     price: 8500,
     originalPrice: 9800,
-    description: 'Fine mulberry silk woven with gold and silver zari threads using ancient Jacquard warp-card techniques. Features traditional floral Jaal motifs.',
+    description: 'Fine mulberry silk saree woven with gold and silver zari threads using ancient Jacquard warp-card techniques. Features traditional floral Jaal motifs.',
     materials: ['Mulberry Silk', 'Tested Gold Zari', 'Organic Indigo Dye'],
     hoursWorked: 36,
     materialCost: 2800,
@@ -79,6 +92,24 @@ export const INITIAL_PRODUCTS: ProductItem[] = [
   },
   {
     id: 'prod-3',
+    title: 'Jaipur Hand-Painted Blue Pottery Plate',
+    category: 'Pottery & Ceramics',
+    rawImageUrl: 'https://images.unsplash.com/photo-1582560475093-ba66accbc424?w=800&auto=format&fit=crop&q=80',
+    polishedImageUrl: 'https://images.unsplash.com/photo-1610701596007-11502861dcfa?w=800&auto=format&fit=crop&q=80',
+    price: 1450,
+    originalPrice: 1700,
+    description: 'Authentic quartz-based ceramic decorative plate hand-painted with cobalt blue cobalt oxide floral motifs and kiln glazed at high temperature.',
+    materials: ['Quartz Powder', 'Natural Cobalt Dye', 'Glass Frit Glaze'],
+    hoursWorked: 8,
+    materialCost: 320,
+    stock: 9,
+    status: 'live',
+    inquiryCount: 11,
+    dateAdded: '3 days ago',
+    gemSyncStatus: 'synced',
+  },
+  {
+    id: 'prod-4',
     title: 'Channapatna Lacquerware Toy Bullock Cart',
     category: 'Woodwork',
     rawImageUrl: 'https://images.unsplash.com/photo-1596461404969-9ae70f2830c1?w=800&auto=format&fit=crop&q=80',
@@ -96,7 +127,7 @@ export const INITIAL_PRODUCTS: ProductItem[] = [
     gemSyncStatus: 'pending',
   },
   {
-    id: 'prod-4',
+    id: 'prod-5',
     title: 'Kutch Hand-Carved Teak Keepsake Chest',
     category: 'Woodwork',
     rawImageUrl: 'https://images.unsplash.com/photo-1513519245088-0e12902e5a38?w=800&auto=format&fit=crop&q=80',
@@ -111,6 +142,24 @@ export const INITIAL_PRODUCTS: ProductItem[] = [
     status: 'gem_approved',
     inquiryCount: 12,
     dateAdded: '2 weeks ago',
+    gemSyncStatus: 'synced',
+  },
+  {
+    id: 'prod-6',
+    title: 'Heritage Hand-Beaten Brass Temple Diya',
+    category: 'Metalwork',
+    rawImageUrl: 'https://images.unsplash.com/photo-1608755728617-aefab37d2edd?w=800&auto=format&fit=crop&q=80',
+    polishedImageUrl: 'https://images.unsplash.com/photo-1512496015851-a90fb38ba796?w=800&auto=format&fit=crop&q=80',
+    price: 1850,
+    originalPrice: 2200,
+    description: 'Solid brass ceremonial oil lamp hand-cast using the lost-wax method and polished with organic tamarind paste for deep golden luster.',
+    materials: ['Virgin Brass Alloy', 'Organic Tamarind Wash'],
+    hoursWorked: 9,
+    materialCost: 510,
+    stock: 7,
+    status: 'live',
+    inquiryCount: 9,
+    dateAdded: '4 days ago',
     gemSyncStatus: 'synced',
   },
 ];

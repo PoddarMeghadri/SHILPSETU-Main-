@@ -54,6 +54,9 @@ export interface ArtisanProfile {
   gemVerified: boolean;
   storyQuote: string;
   bio: string;
+  mobile?: string;
+  email?: string;
+  recentPhotos?: string[];
 }
 
 export interface ProductItem {

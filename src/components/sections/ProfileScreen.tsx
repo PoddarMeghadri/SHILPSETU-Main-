@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { ArtisanProfile, ProductItem, ScreenId, LanguageCode } from '../../types';
 import { sound } from '../../services/sound';
 import { EditProfileModal } from '../profile/EditProfileModal';
@@ -6,6 +6,8 @@ import { WhatsAppIcon, InstagramIcon, FacebookIcon, XIcon, BlueVerifiedBadge } f
 import { SocialRedirectModal, SocialPlatformType } from '../common/SocialRedirectModal';
 import { ShareWorkshopModal } from '../common/ShareWorkshopModal';
 import { useTranslation } from '../../services/translations';
+
+const DEFAULT_AVATAR = 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=400&auto=format&fit=crop&q=80';
 
 interface ProfileScreenProps {
   artisan: ArtisanProfile;
@@ -17,6 +19,7 @@ interface ProfileScreenProps {
   isDark?: boolean;
   onToggleTheme?: () => void;
   language?: LanguageCode;
+  onLogout?: () => void;
 }
 
 export const ProfileScreen: React.FC<ProfileScreenProps> = ({
@@ -28,11 +31,37 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
   isDark = false,
   onToggleTheme,
   language = 'hi',
+  onLogout,
 }) => {
   const { t } = useTranslation(language);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [redirectPlatform, setRedirectPlatform] = useState<SocialPlatformType | null>(null);
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
+
+  // Profile photo upload input ref
+  const profilePhotoInputRef = useRef<HTMLInputElement | null>(null);
+  const directGalleryInputRef = useRef<HTMLInputElement | null>(null);
+
+  // State for recent photos persisted across refresh
+  const [recentPhotos, setRecentPhotos] = useState<string[]>(() => {
+    const saved = localStorage.getItem('shilpsetu_recent_photos');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (_) {}
+    }
+    return artisan.recentPhotos || [
+      'https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?w=600&auto=format&fit=crop&q=80',
+      'https://images.unsplash.com/photo-1578749556568-bc2c40e68b61?w=600&auto=format&fit=crop&q=80',
+      'https://images.unsplash.com/photo-1612196808214-b8e1d6145a8c?w=600&auto=format&fit=crop&q=80',
+    ];
+  });
+
+  // Sync to localStorage and artisan object
+  useEffect(() => {
+    localStorage.setItem('shilpsetu_recent_photos', JSON.stringify(recentPhotos));
+  }, [recentPhotos]);
 
   const artisanSlug = artisan.name.toLowerCase().replace(/\s+/g, '-');
   const storeUrl = `https://shilpsetu.org/${artisanSlug}`;
@@ -43,8 +72,85 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
     setRedirectPlatform(platform);
   };
 
+  // Remove photo with top cross button
+  const handleRemovePhoto = (indexToRemove: number) => {
+    sound.playTap();
+    const updated = recentPhotos.filter((_, idx) => idx !== indexToRemove);
+    setRecentPhotos(updated);
+    localStorage.setItem('shilpsetu_recent_photos', JSON.stringify(updated));
+    onUpdateArtisan({ ...artisan, recentPhotos: updated });
+  };
+
+  // Direct upload to recent photos
+  const handleDirectGalleryUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      sound.playTap();
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const resultUrl = event.target?.result as string;
+        if (resultUrl) {
+          const updated = [resultUrl, ...recentPhotos];
+          setRecentPhotos(updated);
+          localStorage.setItem('shilpsetu_recent_photos', JSON.stringify(updated));
+          onUpdateArtisan({ ...artisan, recentPhotos: updated });
+          sound.playSuccess();
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  // Upload new profile picture
+  const handleProfilePictureUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      sound.playTap();
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const resultUrl = event.target?.result as string;
+        if (resultUrl) {
+          const updatedArtisan = { ...artisan, avatarUrl: resultUrl };
+          onUpdateArtisan(updatedArtisan);
+          localStorage.setItem('shilpsetu_artisan', JSON.stringify(updatedArtisan));
+          // Also prepend to recent photos
+          const updatedPhotos = [resultUrl, ...recentPhotos];
+          setRecentPhotos(updatedPhotos);
+          localStorage.setItem('shilpsetu_recent_photos', JSON.stringify(updatedPhotos));
+          sound.playSuccess();
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  // Remove profile picture (reset to default avatar)
+  const handleRemoveProfilePicture = () => {
+    sound.playTap();
+    const updatedArtisan = { ...artisan, avatarUrl: DEFAULT_AVATAR };
+    onUpdateArtisan(updatedArtisan);
+    localStorage.setItem('shilpsetu_artisan', JSON.stringify(updatedArtisan));
+    sound.playSuccess();
+  };
+
   return (
     <div className="min-h-screen pb-28 pt-2 px-4 max-w-md mx-auto space-y-5">
+      {/* Hidden inputs for direct uploads */}
+      <input
+        ref={profilePhotoInputRef}
+        type="file"
+        accept="image/*"
+        onChange={handleProfilePictureUpload}
+        className="hidden"
+      />
+      <input
+        ref={directGalleryInputRef}
+        type="file"
+        accept="image/*"
+        onChange={handleDirectGalleryUpload}
+        className="hidden"
+      />
+
       {/* Artisan Master Identity Card */}
       <div
         className={`rounded-3xl p-6 border shadow-artisan relative overflow-hidden text-center transition-colors ${
@@ -58,17 +164,15 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
 
         <div className="relative z-10 flex flex-col items-center">
           {/* Avatar with gold ring, Blue Verified Badge & edit badge */}
-          <div
-            className="relative mb-3 group cursor-pointer"
-            onClick={() => setIsEditModalOpen(true)}
-          >
+          <div className="relative mb-3 group">
             <div className="w-24 h-24 rounded-full p-1 bg-gradient-to-tr from-[#B5451B] via-[#E8B84B] to-[#2E4638] shadow-md">
               <img
-                src={artisan.avatarUrl}
+                src={artisan.avatarUrl || DEFAULT_AVATAR}
                 alt={artisan.name}
                 className="w-full h-full rounded-full object-cover border-2 border-[#F5EFE3]"
               />
             </div>
+
             {/* Official Blue Verified Badge */}
             <div
               className="absolute bottom-0 right-0 w-8 h-8 rounded-full bg-white dark:bg-[#1C221A] flex items-center justify-center border-2 border-white dark:border-[#1C221A] shadow-md"
@@ -77,10 +181,33 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
               <BlueVerifiedBadge size={22} />
             </div>
 
-            {/* Quick Edit Overlay Button */}
-            <div className="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-              <span className="material-symbols-outlined text-white text-xl">edit</span>
-            </div>
+            {/* Quick Upload Overlay Button */}
+            <button
+              onClick={() => profilePhotoInputRef.current?.click()}
+              className="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+              title="Change Profile Picture"
+            >
+              <span className="material-symbols-outlined text-white text-xl">photo_camera</span>
+            </button>
+          </div>
+
+          {/* Profile Picture Actions: Upload & Remove */}
+          <div className="flex items-center gap-2 mb-2">
+            <button
+              onClick={() => profilePhotoInputRef.current?.click()}
+              className="px-2.5 py-1 bg-[#B5451B]/10 hover:bg-[#B5451B]/20 text-[#B5451B] dark:text-[#FFA680] text-[11px] font-bold rounded-full border border-[#B5451B]/30 flex items-center gap-1 transition-colors"
+            >
+              <span className="material-symbols-outlined text-xs">add_a_photo</span>
+              <span>Change Photo</span>
+            </button>
+            <button
+              onClick={handleRemoveProfilePicture}
+              className="px-2.5 py-1 bg-red-500/10 hover:bg-red-500/20 text-red-600 dark:text-red-400 text-[11px] font-bold rounded-full border border-red-500/30 flex items-center gap-1 transition-colors"
+              title="Remove profile picture"
+            >
+              <span className="material-symbols-outlined text-xs">delete</span>
+              <span>Remove Photo</span>
+            </button>
           </div>
 
           <div className="flex items-center justify-center gap-1.5 flex-wrap">
@@ -91,6 +218,25 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
           <p className="text-xs opacity-75 font-sans mt-0.5">
             {artisan.location} • {artisan.craft}
           </p>
+
+          {/* Contact Details - Display only provided mobile and email */}
+          {((artisan.mobile && artisan.mobile.trim().length > 0) ||
+            (artisan.email && artisan.email.trim().length > 0)) && (
+            <div className="flex items-center justify-center gap-2.5 text-[11px] opacity-85 mt-1.5 font-mono flex-wrap">
+              {artisan.mobile && artisan.mobile.trim().length > 0 && (
+                <span className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-black/5 dark:bg-white/10 border border-[#22331E]/10 dark:border-white/10">
+                  <span className="material-symbols-outlined text-xs text-[#B5451B]">call</span>
+                  <span>+91 {artisan.mobile}</span>
+                </span>
+              )}
+              {artisan.email && artisan.email.trim().length > 0 && (
+                <span className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-black/5 dark:bg-white/10 border border-[#22331E]/10 dark:border-white/10 truncate max-w-[200px]">
+                  <span className="material-symbols-outlined text-xs text-[#B5451B]">mail</span>
+                  <span className="truncate">{artisan.email.trim()}</span>
+                </span>
+              )}
+            </div>
+          )}
 
           {/* Verification Badges */}
           <div className="flex flex-wrap justify-center gap-1.5 mt-3">
@@ -128,6 +274,66 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
             <span>{t('edit_profile', 'Edit Profile & Lineage')}</span>
           </button>
         </div>
+      </div>
+
+      {/* RECENT WORKSHOP PICTURES GALLERY (PERSISTED + CROSS BUTTON TO REMOVE) */}
+      <div
+        className={`rounded-3xl p-5 border shadow-xs space-y-3 ${
+          isDark
+            ? 'bg-[#1C221A] border-[#2D3A2B] text-[#F4ECDE]'
+            : 'bg-[#EAE0CC] border-[#22331E]/15 text-[#1D1C14]'
+        }`}
+      >
+        <div className="flex items-center justify-between">
+          <h4 className="font-serif font-bold text-base flex items-center gap-2">
+            <span className="material-symbols-outlined text-[#B5451B] text-xl">photo_library</span>
+            <span>Recent Photos ({recentPhotos.length})</span>
+          </h4>
+          <button
+            onClick={() => directGalleryInputRef.current?.click()}
+            className="flex items-center gap-1 text-[11px] font-bold text-[#B5451B] dark:text-[#FFA680] bg-[#B5451B]/15 hover:bg-[#B5451B]/25 px-3 py-1 rounded-full border border-[#B5451B]/30 transition-colors"
+          >
+            <span className="material-symbols-outlined text-sm">add_photo_alternate</span>
+            <span>Upload Photo</span>
+          </button>
+        </div>
+
+        <p className="text-xs opacity-75 font-sans">
+          Photos are saved permanently across page refreshes. Tap the <strong>✕</strong> cross on any photo to remove it.
+        </p>
+
+        {recentPhotos.length === 0 ? (
+          <div className="p-6 text-center rounded-2xl border-2 border-dashed border-[#22331E]/20 text-xs opacity-70">
+            No recent photos uploaded. Tap "Upload Photo" to add your craft pictures.
+          </div>
+        ) : (
+          <div className="grid grid-cols-3 gap-2.5 pt-1">
+            {recentPhotos.map((imgUrl, idx) => (
+              <div
+                key={idx}
+                className="relative aspect-square rounded-2xl overflow-hidden border border-[#22331E]/20 group shadow-sm bg-black/10"
+              >
+                <img
+                  src={imgUrl}
+                  alt={`Recent Craft ${idx + 1}`}
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                />
+
+                {/* Top Cross / Delete Button */}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleRemovePhoto(idx);
+                  }}
+                  className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-red-600 hover:bg-red-700 text-white flex items-center justify-center shadow-md active:scale-90 transition-transform z-10"
+                  title="Remove this photo"
+                >
+                  <span className="material-symbols-outlined text-[13px] font-bold">close</span>
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Profile Completeness Strip */}
@@ -354,6 +560,35 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
               />
             </button>
           </div>
+
+          {/* Setting 4: Logout Button */}
+          <button
+            type="button"
+            onClick={() => {
+              sound.playTap();
+              setShowLogoutModal(true);
+            }}
+            className={`w-full p-3.5 rounded-2xl border flex items-center justify-between text-left active:scale-98 transition-all ${
+              isDark
+                ? 'bg-red-950/20 border-red-900/40 hover:bg-red-950/40 text-red-300'
+                : 'bg-red-50/80 border-red-200 hover:bg-red-100/90 text-red-700'
+            }`}
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-red-600 text-white flex items-center justify-center shadow-xs">
+                <span className="material-symbols-outlined text-lg">logout</span>
+              </div>
+              <div>
+                <p className="font-serif font-bold text-xs">
+                  {t('logout', 'Log Out / साइन आउट')}
+                </p>
+                <p className="text-[10px] opacity-75">
+                  {t('logout_desc', 'Sign out of your artisan account on this device')}
+                </p>
+              </div>
+            </div>
+            <span className="material-symbols-outlined text-sm opacity-70">arrow_forward_ios</span>
+          </button>
         </div>
       </div>
 
@@ -369,13 +604,16 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
         <span>{t('share_qr_link', 'Share Workshop Link & QR')}</span>
       </button>
 
-      {/* Edit Profile Modal with Custom Photo Upload */}
+      {/* Edit Profile Modal with Custom Photo Upload & Cascading State/City */}
       <EditProfileModal
         isOpen={isEditModalOpen}
         onClose={() => setIsEditModalOpen(false)}
         artisan={artisan}
         onSave={(updated) => {
           onUpdateArtisan(updated);
+          if (updated.recentPhotos) {
+            setRecentPhotos(updated.recentPhotos);
+          }
         }}
         language={language}
         isDark={isDark}
@@ -400,7 +638,56 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
           isDark={isDark}
         />
       )}
+
+      {/* Logout Confirmation Dialog Modal */}
+      {showLogoutModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fade-in">
+          <div
+            className={`w-full max-w-sm rounded-3xl p-6 border shadow-2xl space-y-4 text-center ${
+              isDark
+                ? 'bg-[#1C221A] border-[#2D3A2B] text-[#F4ECDE]'
+                : 'bg-[#F4ECDE] border-[#22331E]/20 text-[#1A1815]'
+            }`}
+          >
+            <div className="w-14 h-14 mx-auto rounded-full bg-red-500/15 border border-red-500/30 text-red-500 flex items-center justify-center">
+              <span className="material-symbols-outlined text-2xl">logout</span>
+            </div>
+            <div>
+              <h4 className="font-serif font-bold text-lg">Log Out of ShilpSetu?</h4>
+              <p className="text-xs opacity-75 mt-1 font-sans leading-relaxed">
+                You will be returned to the launch registration screen. You can sign back in anytime using your registered mobile number.
+              </p>
+            </div>
+            <div className="flex gap-2.5 pt-2">
+              <button
+                type="button"
+                onClick={() => {
+                  sound.playTap();
+                  setShowLogoutModal(false);
+                }}
+                className={`flex-1 py-2.5 rounded-2xl border text-xs font-serif font-bold transition-colors ${
+                  isDark ? 'border-[#2D3A2B] hover:bg-white/5' : 'border-[#22331E]/20 hover:bg-black/5'
+                }`}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  sound.playTap();
+                  setShowLogoutModal(false);
+                  if (onLogout) {
+                    onLogout();
+                  }
+                }}
+                className="flex-1 py-2.5 rounded-2xl bg-red-600 hover:bg-red-700 text-white text-xs font-serif font-bold shadow-md active:scale-95 transition-all"
+              >
+                Yes, Log Out
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
-

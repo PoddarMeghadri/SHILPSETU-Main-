@@ -5,7 +5,7 @@ import { INITIAL_ARTISAN, INITIAL_PRODUCTS, INITIAL_ACTIVITIES, ARTISAN_STORIES 
 import { TopAppBar } from './components/layout/TopAppBar';
 import { BottomNavBar } from './components/layout/BottomNavBar';
 import { OfflineBanner } from './components/layout/OfflineBanner';
-import { OnboardingFlow } from './components/onboarding/OnboardingFlow';
+import { OnboardingFlow, OnboardingUserData } from './components/onboarding/OnboardingFlow';
 import { HomeScreen } from './components/sections/HomeScreen';
 import { AIStudioScreen } from './components/sections/AIStudioScreen';
 import { AutoCatalogerScreen } from './components/sections/AutoCatalogerScreen';
@@ -21,7 +21,9 @@ import { ShilpiVoiceModal } from './components/voice/ShilpiVoiceModal';
 import { sound } from './services/sound';
 
 export function App() {
-  const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState<boolean>(true);
+  const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState<boolean>(() => {
+    return localStorage.getItem('shilpsetu_auth_done') === 'true';
+  });
   const [currentScreen, setCurrentScreen] = useState<ScreenId>('home');
   const [language, setLanguage] = useState<LanguageCode>(() => {
     return (localStorage.getItem('shilpsetu_lang') as LanguageCode) || 'hi';
@@ -102,24 +104,45 @@ export function App() {
     setActivities((prev) => [newActivity, ...prev]);
   };
 
-  const handleOnboardingComplete = (selectedCraft: string) => {
+  const handleLogout = () => {
+    sound.playTap();
+    localStorage.removeItem('shilpsetu_auth_done');
+    setHasCompletedOnboarding(false);
+    setCurrentScreen('home');
+  };
+
+  const handleOnboardingComplete = (data: OnboardingUserData) => {
     setHasCompletedOnboarding(true);
-    const craftTitles: Record<string, string> = {
-      pottery: 'Master Terracotta Potter',
-      weaving: 'Master Handloom Weaver',
-      woodwork: 'Master Wood Sculptor',
-      metalwork: 'Master Brass Artisan',
-      jewelry: 'Master Jewelry Maker',
-      painting: 'Master Folk Painter',
+    localStorage.setItem('shilpsetu_auth_done', 'true');
+
+    const craftTitles: Record<string, { title: string; craft: string }> = {
+      pottery: { title: 'Master Clay Sculptor & Potter', craft: 'Terracotta & Heritage Pottery' },
+      weaving: { title: 'Master Handloom Weaver', craft: 'Banarasi Handloom Weaving' },
+      woodwork: { title: 'Master Wood Sculptor', craft: 'Channapatna Wooden Toys' },
+      metalwork: { title: 'Master Brass Artisan', craft: 'Heritage Metal & Brass Craft' },
+      jewelry: { title: 'Master Jewelry Maker', craft: 'Artisan Kundan & Meenakari' },
+      painting: { title: 'Master Folk Painter', craft: 'Madhubani & Heritage Painting' },
     };
-    if (craftTitles[selectedCraft]) {
-      const updated = {
-        ...artisan,
-        craft: selectedCraft,
-        title: craftTitles[selectedCraft],
-      };
-      handleUpdateArtisan(updated);
-    }
+
+    const craftInfo = craftTitles[data.selectedCraft] || {
+      title: 'Master Heritage Artisan',
+      craft: 'Traditional Indian Handicrafts',
+    };
+
+    const userLocation =
+      data.city && data.state ? `${data.city.trim()}, ${data.state.trim()}` : artisan.location;
+
+    const updatedArtisan: ArtisanProfile = {
+      ...artisan,
+      name: data.fullName?.trim() || artisan.name,
+      location: userLocation,
+      mobile: data.mobile?.trim() || artisan.mobile,
+      email: data.email?.trim() ? data.email.trim() : undefined,
+      craft: craftInfo.craft,
+      title: craftInfo.title,
+    };
+
+    handleUpdateArtisan(updatedArtisan);
   };
 
   return (
@@ -128,9 +151,9 @@ export function App() {
         isDark ? 'bg-[#121411] text-[#F4ECDE]' : 'bg-[#F4ECDE] text-[#1A1815]'
       }`}
     >
-      {/* 3-Slide Onboarding Flow if not completed */}
+      {/* 4-Step Onboarding Flow if not completed */}
       {!hasCompletedOnboarding && (
-        <OnboardingFlow onComplete={handleOnboardingComplete} />
+        <OnboardingFlow onComplete={handleOnboardingComplete} isDark={isDark} />
       )}
 
       {/* Main Mobile App Container Frame */}
@@ -303,6 +326,7 @@ export function App() {
                   isDark={isDark}
                   onToggleTheme={handleToggleTheme}
                   language={language}
+                  onLogout={handleLogout}
                   onNavigate={(scr) => {
                     sound.playTap();
                     setCurrentScreen(scr);

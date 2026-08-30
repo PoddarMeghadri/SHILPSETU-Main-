@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ProductItem, ScreenId, LanguageCode } from '../../types';
 import { sound } from '../../services/sound';
 import { PotterWheelSpinner } from '../common/PotterWheelSpinner';
@@ -21,13 +21,19 @@ export const AIStudioScreen: React.FC<AIStudioScreenProps> = ({
 }) => {
   const { t } = useTranslation(language);
   const [activeTab, setActiveTab] = useState<'camera' | 'slider' | 'gallery'>('slider');
-  const [selectedProduct, setSelectedProduct] = useState<ProductItem>(products[0]);
+  const [selectedProduct, setSelectedProduct] = useState<ProductItem>(products[0] || {} as ProductItem);
   const [sliderPosition, setSliderPosition] = useState<number>(50); // 0 to 100
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const [showGrid, setShowGrid] = useState<boolean>(true);
   const [activeLighting, setActiveLighting] = useState<string>('warm_studio');
   const [aspectRatio, setAspectRatio] = useState<'1:1' | '4:5' | '16:9'>('1:1');
   const [showSuccess, setShowSuccess] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (!products.some((p) => p.id === selectedProduct?.id) && products.length > 0) {
+      setSelectedProduct(products[0]);
+    }
+  }, [products, selectedProduct]);
 
   const handleCapture = () => {
     sound.playShutter();
