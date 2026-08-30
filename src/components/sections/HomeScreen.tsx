@@ -368,7 +368,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                 {t('screen_cataloger', 'Voice Auto-Cataloger')}
               </h4>
               <p className="text-[11px] opacity-70 font-sans mt-1 leading-snug">
-                {t('module2_desc', 'Speak in 7 Indian tongues to create listings.')}
+                {t('module2_desc', 'Speak in 22 Indian tongues or in English to create listings')}
               </p>
             </div>
           </motion.button>

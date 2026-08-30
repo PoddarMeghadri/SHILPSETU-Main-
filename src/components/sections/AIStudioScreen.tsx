@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { ProductItem, ScreenId, LanguageCode } from '../../types';
 import { sound } from '../../services/sound';
 import { PotterWheelSpinner } from '../common/PotterWheelSpinner';
@@ -16,18 +16,19 @@ interface AIStudioScreenProps {
 export const AIStudioScreen: React.FC<AIStudioScreenProps> = ({
   products,
   onNavigate,
+  onSelectProductForCatalog,
   language = 'hi',
   isDark = false,
 }) => {
   const { t } = useTranslation(language);
-  const [activeTab, setActiveTab] = useState<'camera' | 'slider' | 'gallery'>('slider');
+  const [activeTab, setActiveTab] = useState<'camera' | 'gallery'>('camera');
   const [selectedProduct, setSelectedProduct] = useState<ProductItem>(products[0] || {} as ProductItem);
-  const [sliderPosition, setSliderPosition] = useState<number>(50); // 0 to 100
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const [showGrid, setShowGrid] = useState<boolean>(true);
-  const [activeLighting, setActiveLighting] = useState<string>('warm_studio');
+  const [activeLighting, setActiveLighting] = useState<string>('soft_cinematic');
   const [aspectRatio, setAspectRatio] = useState<'1:1' | '4:5' | '16:9'>('1:1');
   const [showSuccess, setShowSuccess] = useState<boolean>(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!products.some((p) => p.id === selectedProduct?.id) && products.length > 0) {
@@ -35,6 +36,7 @@ export const AIStudioScreen: React.FC<AIStudioScreenProps> = ({
     }
   }, [products, selectedProduct]);
 
+  // Handle Capture with realistic processing simulation
   const handleCapture = () => {
     sound.playShutter();
     setIsProcessing(true);
@@ -42,24 +44,32 @@ export const AIStudioScreen: React.FC<AIStudioScreenProps> = ({
     setTimeout(() => {
       setIsProcessing(false);
       sound.playSuccess();
-      setActiveTab('slider');
+      setActiveTab('gallery');
       setShowSuccess(true);
     }, 2000);
   };
 
-  const handleSliderMove = (e: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>) => {
-    const target = e.currentTarget;
-    const rect = target.getBoundingClientRect();
-    const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
-    const offsetX = Math.max(0, Math.min(clientX - rect.left, rect.width));
-    const percentage = (offsetX / rect.width) * 100;
-    setSliderPosition(percentage);
-    sound.playTick();
+  // Custom photo upload simulation
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const uploadedUrl = event.target?.result as string;
+        // Create dynamic preview item
+        setSelectedProduct((prev) => ({
+          ...prev,
+          rawImageUrl: uploadedUrl,
+        }));
+        handleCapture();
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   return (
-    <div className="min-h-screen pb-28 pt-2 px-4 max-w-md mx-auto space-y-5">
-      {/* Sub-navigation pill tabs */}
+    <div className="min-h-screen pb-28 pt-2 px-4 max-w-md mx-auto space-y-4">
+      {/* Sub-navigation pill tabs - 2 options: AI Viewfinder & Studio Gallery */}
       <div
         className={`flex p-1 rounded-2xl border ${
           isDark
@@ -67,22 +77,6 @@ export const AIStudioScreen: React.FC<AIStudioScreenProps> = ({
             : 'bg-[#EFE4CF] border-[#22331E]/10'
         }`}
       >
-        <button
-          onClick={() => {
-            sound.playTap();
-            setActiveTab('slider');
-          }}
-          className={`flex-1 py-2 text-xs font-serif font-bold rounded-xl transition-all ${
-            activeTab === 'slider'
-              ? 'bg-[#B5451B] text-white shadow-xs'
-              : isDark
-              ? 'text-[#F4ECDE]/70 hover:text-white'
-              : 'text-[#22331E]/70 hover:text-[#1A1815]'
-          }`}
-        >
-          {t('before_and_after', 'Before & After')}
-        </button>
-
         <button
           onClick={() => {
             sound.playTap();
@@ -119,157 +113,28 @@ export const AIStudioScreen: React.FC<AIStudioScreenProps> = ({
       {/* AI Processing Shimmer Loader State */}
       {isProcessing && (
         <div
-          className={`rounded-3xl p-8 text-center space-y-4 border shadow-2xl ${
+          className={`rounded-3xl p-7 text-center space-y-4 border shadow-2xl ${
             isDark
               ? 'bg-[#1C221A] text-[#F4ECDE] border-[#2D3A2B]'
               : 'bg-[#22331E] text-[#F4ECDE] border-[#E8B84B]/40'
           }`}
         >
           <PotterWheelSpinner size="lg" text={t('enhancing_photo', 'Enhancing Photo with AI...')} />
-          <div className="space-y-1">
-            <h4 className="font-serif font-bold text-lg text-white">
-              {t('isolating_clay', 'Isolating Clay & Adding 4K Studio Light')}
+          
+          <div className="space-y-1.5 px-2">
+            <h4 className="font-serif font-bold text-base text-white">
+              Professional Studio Product Photography
             </h4>
-            <p className="text-xs text-white/70 font-sans">
-              {t('removing_background', 'Removing cluttered workshop background and generating soft natural shadows.')}
+            <p className="text-xs text-white/80 font-sans leading-relaxed">
+              Soft cinematic lighting, 4k resolution, clean neutral background, sharp focus, exact original object preservation, highly detailed native texture, photorealistic enhancement.
             </p>
           </div>
+
           <div className="w-full h-2 rounded-full overflow-hidden shimmer-gold" />
         </div>
       )}
 
-      {/* TAB 1: BEFORE / AFTER INTERACTIVE SLIDER */}
-      {activeTab === 'slider' && !isProcessing && (
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3
-                className={`font-serif font-bold text-lg ${
-                  isDark ? 'text-[#F4ECDE]' : 'text-[#22331E]'
-                }`}
-              >
-                {t('interactive_compare', 'Interactive Studio Compare')}
-              </h3>
-              <p className="text-xs opacity-70 font-sans">
-                {t('drag_divider', 'Drag the divider to compare raw workbench photo with AI polish.')}
-              </p>
-            </div>
-
-            <span className="px-2.5 py-1 bg-[#22331E]/10 dark:bg-[#E8B84B]/15 text-[#22331E] dark:text-[#E8B84B] text-[10px] font-bold uppercase rounded-full border border-[#22331E]/20">
-              4K Enhanced
-            </span>
-          </div>
-
-          {/* Interactive Split Canvas */}
-          <div
-            onMouseMove={(e) => e.buttons === 1 && handleSliderMove(e)}
-            onTouchMove={handleSliderMove}
-            onClick={handleSliderMove}
-            className="relative w-full aspect-square rounded-3xl overflow-hidden shadow-artisan border-2 border-[#22331E]/15 cursor-ew-resize select-none bg-[#1A1815]"
-          >
-            {/* Background Layer: Polished Studio Photo (Right side) */}
-            <img
-              src={selectedProduct.polishedImageUrl}
-              alt="Polished Studio"
-              className="absolute inset-0 w-full h-full object-cover pointer-events-none"
-            />
-            <div className="absolute top-4 right-4 bg-[#22331E]/85 backdrop-blur-md text-[#F4ECDE] text-[10px] font-semibold uppercase px-2.5 py-1 rounded-full border border-[#E8B84B]/40 shadow-md">
-              {t('ai_studio_polish', 'AI Studio Polish')}
-            </div>
-
-            {/* Foreground Layer: Raw Workbench Photo */}
-                      
-            <div
-              className="absolute inset-0 pointer-events-none"
-              style={{ clipPath: `inset(0 ${100 - sliderPosition}% 0 0)` }}
-            >
-              <img
-                src={selectedProduct.rawImageUrl}
-                alt="Raw Workbench"
-                className="w-full h-full object-cover"
-              />
-              <div className="absolute top-4 left-4 bg-black/75 backdrop-blur-md text-white text-[10px] font-semibold uppercase px-2.5 py-1 rounded-full border border-white/20 shadow-md">
-                {t('raw_photo', 'Raw Photo')}
-              </div>
-            </div>
-
-            {/* Vertical Divider Handle Line */}
-            <div
-              className="absolute top-0 bottom-0 w-1 bg-[#E8B84B] shadow-[0_0_12px_rgba(232,184,75,0.8)] pointer-events-none flex items-center justify-center -ml-0.5"
-              style={{ left: `${sliderPosition}%` }}
-            >
-              <div className="w-8 h-8 rounded-full bg-[#B5451B] border-2 border-[#E8B84B] text-white flex items-center justify-center shadow-lg">
-                <span className="material-symbols-outlined text-sm font-bold">
-                  unfold_more
-                </span>
-              </div>
-            </div>
-          </div>
-
-          {/* Product Switcher Pills */}
-          <div className="space-y-1.5">
-            <span className="text-[11px] font-bold text-[#B5451B] uppercase tracking-wider">
-              {t('select_sample_craft', 'Select Sample Craft:')}
-            </span>
-            <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
-              {products.map((prod) => (
-                <button
-                  key={prod.id}
-                  onClick={() => {
-                    sound.playTap();
-                    setSelectedProduct(prod);
-                  }}
-                  className={`flex items-center gap-2 px-3 py-1.5 rounded-2xl border text-xs shrink-0 transition-all ${
-                    selectedProduct.id === prod.id
-                      ? 'bg-[#B5451B] text-white border-[#B5451B] font-medium shadow-xs'
-                      : isDark
-                      ? 'bg-[#1C221A] text-[#F4ECDE] border-[#2D3A2B]'
-                      : 'bg-[#EFE4CF] text-[#1A1815] border-[#22331E]/10'
-                  }`}
-                >
-                  <img
-                    src={prod.polishedImageUrl}
-                    alt={prod.title}
-                    className="w-5 h-5 rounded-lg object-cover"
-                  />
-                  <span className="truncate max-w-[120px] font-medium">{prod.title}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Action Row */}
-          <div className="grid grid-cols-2 gap-3 pt-1">
-            <button
-              onClick={() => {
-                sound.playTap();
-                onNavigate('cataloger');
-              }}
-              className="bg-[#B5451B] hover:bg-[#9E3913] text-white font-serif font-bold py-3.5 px-4 rounded-3xl shadow-md transition-transform active:scale-95 flex items-center justify-center gap-2 text-sm"
-            >
-              <span className="material-symbols-outlined text-lg">mic</span>
-              <span>{t('catalog_with_voice', 'Catalog with Voice')}</span>
-            </button>
-
-            <button
-              onClick={() => {
-                sound.playTap();
-                onNavigate('social');
-              }}
-              className={`border font-serif font-bold py-3.5 px-4 rounded-3xl shadow-xs transition-transform active:scale-95 flex items-center justify-center gap-2 text-sm ${
-                isDark
-                  ? 'bg-[#1C221A] border-[#2D3A2B] text-[#F4ECDE] hover:bg-[#252E22]'
-                  : 'bg-[#EFE4CF] hover:bg-[#EAE0CC] border-[#22331E]/10 text-[#1A1815]'
-              }`}
-            >
-              <span className="material-symbols-outlined text-lg text-[#25D366]">share</span>
-              <span>{t('create_share_kit', 'Create Share Kit')}</span>
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* TAB 2: AI VIEWFINDER / CAMERA MODE */}
+      {/* TAB 1: AI VIEWFINDER / CAMERA MODE */}
       {activeTab === 'camera' && !isProcessing && (
         <div className="space-y-4">
           <div className="relative w-full aspect-square bg-[#1A1815] rounded-3xl overflow-hidden border-2 border-[#D9A441]/40 shadow-2xl flex flex-col justify-between p-4">
@@ -318,6 +183,22 @@ export const AIStudioScreen: React.FC<AIStudioScreenProps> = ({
                   <span className="material-symbols-outlined text-base">grid_4x4</span>
                 </button>
 
+                {/* Upload custom craft photo */}
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleFileUpload}
+                  className="hidden"
+                />
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  className="w-8 h-8 rounded-full bg-black/60 text-white flex items-center justify-center backdrop-blur-md border border-white/20 hover:border-[#E8B84B]"
+                  title="Upload Craft Photo"
+                >
+                  <span className="material-symbols-outlined text-base">upload</span>
+                </button>
+
                 <button
                   onClick={() => sound.playTap()}
                   className="w-8 h-8 rounded-full bg-black/60 text-white flex items-center justify-center backdrop-blur-md border border-white/20"
@@ -329,18 +210,22 @@ export const AIStudioScreen: React.FC<AIStudioScreenProps> = ({
             </div>
 
             {/* Center Focus Box Indicator */}
-            <div className="relative z-10 mx-auto w-24 h-24 border-2 border-dashed border-[#E8B84B] rounded-2xl flex items-center justify-center pointer-events-none animate-pulse">
-              <span className="text-[9px] uppercase tracking-widest text-[#E8B84B] font-bold bg-black/60 px-1.5 py-0.5 rounded">
-                Clay Detected
+            <div className="relative z-10 mx-auto w-28 h-28 border-2 border-dashed border-[#E8B84B] rounded-2xl flex flex-col items-center justify-center pointer-events-none animate-pulse">
+              <span className="text-[9px] uppercase tracking-widest text-[#E8B84B] font-bold bg-black/70 px-2 py-0.5 rounded">
+                Sharp Focus Locked
+              </span>
+              <span className="text-[8px] text-white/80 mt-1">
+                Exact Geometry Preserved
               </span>
             </div>
 
             {/* Bottom Lighting Presets Bar */}
             <div className="relative z-10 flex justify-center gap-1.5 overflow-x-auto py-1">
               {[
-                { id: 'warm_studio', label: 'Warm Studio', icon: 'wb_sunny' },
-                { id: 'soft_diffused', label: 'Diffused Soft', icon: 'cloud' },
-                { id: 'velvet_dark', label: 'Velvet Charcoal', icon: 'nightlight' },
+                { id: 'soft_cinematic', label: 'Soft Cinematic', icon: 'wb_incandescent' },
+                { id: 'clean_neutral', label: 'Clean Neutral', icon: 'wb_sunny' },
+                { id: 'texture_macro', label: 'High Detail Macro', icon: 'texture' },
+                { id: 'photorealistic', label: 'Editorial Polish', icon: 'auto_awesome' },
               ].map((light) => (
                 <button
                   key={light.id}
@@ -348,7 +233,7 @@ export const AIStudioScreen: React.FC<AIStudioScreenProps> = ({
                     sound.playTap();
                     setActiveLighting(light.id);
                   }}
-                  className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-sans font-medium backdrop-blur-md transition-all ${
+                  className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-sans font-medium backdrop-blur-md transition-all shrink-0 ${
                     activeLighting === light.id
                       ? 'bg-[#B5451B] text-white border border-[#E8B84B]'
                       : 'bg-black/60 text-white/80 border border-white/20'
@@ -361,7 +246,7 @@ export const AIStudioScreen: React.FC<AIStudioScreenProps> = ({
             </div>
           </div>
 
-          {/* Shutter Button Row */}
+          {/* Shutter & Actions Row */}
           <div className="flex items-center justify-around pt-2">
             <button
               onClick={() => {
@@ -369,6 +254,7 @@ export const AIStudioScreen: React.FC<AIStudioScreenProps> = ({
                 setActiveTab('gallery');
               }}
               className="w-12 h-12 rounded-2xl overflow-hidden border-2 border-[#22331E]/20 shadow-xs"
+              title="Studio Gallery"
             >
               <img
                 src={products[0].polishedImageUrl}
@@ -377,6 +263,7 @@ export const AIStudioScreen: React.FC<AIStudioScreenProps> = ({
               />
             </button>
 
+            {/* Master Capture Button */}
             <button
               onClick={handleCapture}
               className="w-20 h-20 rounded-full bg-[#B5451B] border-4 border-[#F4ECDE] shadow-xl flex items-center justify-center text-white active:scale-90 transition-transform group"
@@ -389,23 +276,32 @@ export const AIStudioScreen: React.FC<AIStudioScreenProps> = ({
             </button>
 
             <button
-              onClick={() => {
-                sound.playTap();
-                setActiveTab('slider');
-              }}
+              onClick={() => fileInputRef.current?.click()}
               className={`w-12 h-12 rounded-2xl border flex items-center justify-center ${
                 isDark
                   ? 'bg-[#1C221A] border-[#2D3A2B] text-[#F4ECDE]'
                   : 'bg-[#EFE4CF] border-[#22331E]/10 text-[#22331E]'
               }`}
+              title="Upload Craft Photo"
             >
-              <span className="material-symbols-outlined text-2xl">compare</span>
+              <span className="material-symbols-outlined text-2xl">upload_file</span>
+            </button>
+          </div>
+
+          {/* Hint to upload or capture */}
+          <div className="text-center pt-1">
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              className="text-xs font-serif font-bold text-[#B5451B] hover:underline inline-flex items-center gap-1"
+            >
+              <span className="material-symbols-outlined text-sm">file_upload</span>
+              <span>Or upload raw workshop photo to enhance in 4K studio</span>
             </button>
           </div>
         </div>
       )}
 
-      {/* TAB 3: STUDIO GALLERY */}
+      {/* TAB 2: STUDIO GALLERY */}
       {activeTab === 'gallery' && !isProcessing && (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
@@ -440,6 +336,9 @@ export const AIStudioScreen: React.FC<AIStudioScreenProps> = ({
                   <div className="absolute top-2 right-2 px-2 py-0.5 bg-[#22331E]/90 text-white rounded-full text-[9px] font-bold">
                     ₹{prod.price}
                   </div>
+                  <div className="absolute bottom-2 left-2 px-1.5 py-0.5 bg-black/70 backdrop-blur-xs text-[8px] font-bold text-[#E8B84B] rounded">
+                    4K Studio
+                  </div>
                 </div>
 
                 <h4
@@ -457,12 +356,15 @@ export const AIStudioScreen: React.FC<AIStudioScreenProps> = ({
                   <button
                     onClick={() => {
                       sound.playTap();
-                      setSelectedProduct(prod);
-                      setActiveTab('slider');
+                      if (onSelectProductForCatalog) {
+                        onSelectProductForCatalog(prod);
+                      }
+                      onNavigate('cataloger');
                     }}
-                    className="flex-1 bg-[#B5451B] text-white text-[10px] font-semibold py-2 rounded-xl text-center"
+                    className="flex-1 bg-[#B5451B] text-white text-[10px] font-semibold py-2 rounded-xl text-center flex items-center justify-center gap-1"
                   >
-                    {t('compare', 'Compare')}
+                    <span className="material-symbols-outlined text-xs">mic</span>
+                    <span>{t('catalog', 'Catalog')}</span>
                   </button>
                   <button
                     onClick={() => {
@@ -487,12 +389,16 @@ export const AIStudioScreen: React.FC<AIStudioScreenProps> = ({
       {/* Success Modal */}
       <SuccessModal
         isOpen={showSuccess}
-        onClose={() => setShowSuccess(false)}
-        title={t('photo_enhanced_success', 'Photo Enhanced in 4K!')}
-        subtitle={t('photo_enhanced_sub', 'Workshop background replaced with warm studio lighting and soft shadows.')}
-        actionLabel={t('view_before_after', 'View Before & After')}
+        onClose={() => {
+          setShowSuccess(false);
+          setActiveTab('gallery');
+        }}
+        title="Studio Enhancement Complete!"
+        subtitle="Professional studio product photography, soft cinematic lighting, 4k resolution, clean neutral background, sharp focus, exact original object preservation, highly detailed native texture, photorealistic enhancement."
+        actionLabel={t('view_gallery', 'View Studio Gallery')}
         isDark={isDark}
       />
     </div>
   );
 };
+
