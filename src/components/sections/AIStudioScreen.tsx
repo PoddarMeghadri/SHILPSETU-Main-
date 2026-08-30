@@ -178,15 +178,15 @@ export const AIStudioScreen: React.FC<AIStudioScreenProps> = ({
             </div>
 
             {/* Foreground Layer: Raw Workbench Photo */}
+                      
             <div
-              className="absolute inset-0 overflow-hidden pointer-events-none"
-              style={{ width: `${sliderPosition}%` }}
+              className="absolute inset-0 pointer-events-none"
+              style={{ clipPath: `inset(0 ${100 - sliderPosition}% 0 0)` }}
             >
               <img
                 src={selectedProduct.rawImageUrl}
                 alt="Raw Workbench"
-                className="absolute top-0 left-0 max-w-none w-full h-full object-cover"
-                style={{ width: '100%', height: '100%' }}
+                className="w-full h-full object-cover"
               />
               <div className="absolute top-4 left-4 bg-black/75 backdrop-blur-md text-white text-[10px] font-semibold uppercase px-2.5 py-1 rounded-full border border-white/20 shadow-md">
                 {t('raw_photo', 'Raw Photo')}
