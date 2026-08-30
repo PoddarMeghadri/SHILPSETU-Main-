@@ -73,11 +73,12 @@ export const INITIAL_PRODUCTS: ProductItem[] = [
     gemSyncStatus: 'synced',
   },
   {
+      {
     id: 'prod-2',
     title: 'Banarasi Zari Handloom Silk Saree',
     category: 'Weaving',
-       rawImageUrl: 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=800&auto=format&fit=crop&q=80',
-    polishedImageUrl: 'https://images.unsplash.com/photo-1610030469874-a6ff9c0f9947?w=800&auto=format&fit=crop&q=80',
+    rawImageUrl: 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=800&auto=format&fit=crop&q=80',
+    polishedImageUrl: 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=800&auto=format&fit=crop&q=80',
     price: 8500,
     originalPrice: 9800,
     description: 'Fine mulberry silk saree woven with gold and silver zari threads using ancient Jacquard warp-card techniques. Features traditional floral Jaal motifs.',
@@ -89,6 +90,7 @@ export const INITIAL_PRODUCTS: ProductItem[] = [
     inquiryCount: 15,
     dateAdded: '5 days ago',
     gemSyncStatus: 'synced',
+  },
   },
   {
     id: 'prod-3',
