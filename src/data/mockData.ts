@@ -73,7 +73,6 @@ export const INITIAL_PRODUCTS: ProductItem[] = [
     gemSyncStatus: 'synced',
   },
   {
-      {
     id: 'prod-2',
     title: 'Banarasi Zari Handloom Silk Saree',
     category: 'Weaving',
@@ -90,7 +89,6 @@ export const INITIAL_PRODUCTS: ProductItem[] = [
     inquiryCount: 15,
     dateAdded: '5 days ago',
     gemSyncStatus: 'synced',
-  },
   },
   {
     id: 'prod-3',
