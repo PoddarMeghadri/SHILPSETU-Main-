@@ -162,12 +162,12 @@ export const TopAppBar: React.FC<TopAppBarProps> = ({
       {/* Language Selector Dropdown Modal */}
       <AnimatePresence>
         {showLangMenu && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
+          <div className="fixed inset-0 z-50 flex items-start justify-center pt-20 p-4 bg-black/50 backdrop-blur-xs">
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: -10 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: -10 }}
-              className={`w-full max-w-sm sm:max-w-md rounded-3xl shadow-2xl border p-5 ${
+              className={`w-full max-w-xs rounded-3xl shadow-2xl border p-5 ${
                 isDark
                   ? 'bg-[#1C221A] text-[#F4ECDE] border-[#2D3A2B]'
                   : 'bg-[#F4ECDE] text-[#1A1815] border-[#22331E]/15'

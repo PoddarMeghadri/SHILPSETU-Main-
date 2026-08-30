@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ScreenId, LanguageCode, ProductItem, ActivityItem, ArtisanProfile, StoryAvatar } from './types';
 import { INITIAL_ARTISAN, INITIAL_PRODUCTS, INITIAL_ACTIVITIES, ARTISAN_STORIES } from './data/mockData';
-import { DesktopTabletBar } from './components/layout/DesktopTabletBar';
 import { TopAppBar } from './components/layout/TopAppBar';
 import { BottomNavBar } from './components/layout/BottomNavBar';
 import { OfflineBanner } from './components/layout/OfflineBanner';
@@ -156,14 +155,6 @@ export function App() {
       {!hasCompletedOnboarding && (
         <OnboardingFlow onComplete={handleOnboardingComplete} isDark={isDark} />
       )}
-
-      {/* Desktop / Tablet Navigation & Quick Controls Header */}
-      <DesktopTabletBar
-        currentLanguage={language}
-        onLanguageChange={handleLanguageChange}
-        isDark={isDark}
-        onToggleTheme={handleToggleTheme}
-      />
 
       {/* Main Mobile App Container Frame */}
       <div
