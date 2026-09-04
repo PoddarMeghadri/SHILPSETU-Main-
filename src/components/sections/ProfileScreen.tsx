@@ -30,10 +30,9 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
   onUpdateArtisan,
   isDark = false,
   onToggleTheme,
-  language = 'hi',
   onLogout,
 }) => {
-  const { t } = useTranslation(language);
+  const { t, language } = useTranslation();
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [redirectPlatform, setRedirectPlatform] = useState<SocialPlatformType | null>(null);
@@ -43,19 +42,25 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
   const profilePhotoInputRef = useRef<HTMLInputElement | null>(null);
   const directGalleryInputRef = useRef<HTMLInputElement | null>(null);
 
-  // State for recent photos persisted across refresh
+  // State for recent photos persisted across refresh (purely craft/workshop photos, never profile pictures)
   const [recentPhotos, setRecentPhotos] = useState<string[]>(() => {
     const saved = localStorage.getItem('shilpsetu_recent_photos');
+    let photos: string[] = [];
     if (saved) {
       try {
-        return JSON.parse(saved);
+        photos = JSON.parse(saved);
       } catch (_) {}
+    } else {
+      photos = artisan.recentPhotos || [
+        'https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?w=600&auto=format&fit=crop&q=80',
+        'https://images.unsplash.com/photo-1578749556568-bc2c40e68b61?w=600&auto=format&fit=crop&q=80',
+        'https://images.unsplash.com/photo-1612196808214-b8e1d6145a8c?w=600&auto=format&fit=crop&q=80',
+      ];
     }
-    return artisan.recentPhotos || [
-      'https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?w=600&auto=format&fit=crop&q=80',
-      'https://images.unsplash.com/photo-1578749556568-bc2c40e68b61?w=600&auto=format&fit=crop&q=80',
-      'https://images.unsplash.com/photo-1612196808214-b8e1d6145a8c?w=600&auto=format&fit=crop&q=80',
-    ];
+    // Strict requirement: Never include uploaded profile pictures in recent photos
+    const currentAvatar = artisan.avatarUrl;
+    const uploadedPortraits: string[] = JSON.parse(localStorage.getItem('shilpsetu_uploaded_portraits') || '[]');
+    return photos.filter((p) => p !== currentAvatar && !uploadedPortraits.includes(p));
   });
 
   // Sync to localStorage and artisan object
@@ -113,10 +118,13 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
           const updatedArtisan = { ...artisan, avatarUrl: resultUrl };
           onUpdateArtisan(updatedArtisan);
           localStorage.setItem('shilpsetu_artisan', JSON.stringify(updatedArtisan));
-          // Also prepend to recent photos
-          const updatedPhotos = [resultUrl, ...recentPhotos];
-          setRecentPhotos(updatedPhotos);
-          localStorage.setItem('shilpsetu_recent_photos', JSON.stringify(updatedPhotos));
+          // Save to uploaded portraits only (never to recent photos)
+          try {
+            const savedPortraits: string[] = JSON.parse(localStorage.getItem('shilpsetu_uploaded_portraits') || '[]');
+            if (!savedPortraits.includes(resultUrl)) {
+              localStorage.setItem('shilpsetu_uploaded_portraits', JSON.stringify([resultUrl, ...savedPortraits]));
+            }
+          } catch (_) {}
           sound.playSuccess();
         }
       };
@@ -198,15 +206,15 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
               className="px-2.5 py-1 bg-[#B5451B]/10 hover:bg-[#B5451B]/20 text-[#B5451B] dark:text-[#FFA680] text-[11px] font-bold rounded-full border border-[#B5451B]/30 flex items-center gap-1 transition-colors"
             >
               <span className="material-symbols-outlined text-xs">add_a_photo</span>
-              <span>Change Photo</span>
+              <span>{t('change_photo', 'Change Photo')}</span>
             </button>
             <button
               onClick={handleRemoveProfilePicture}
               className="px-2.5 py-1 bg-red-500/10 hover:bg-red-500/20 text-red-600 dark:text-red-400 text-[11px] font-bold rounded-full border border-red-500/30 flex items-center gap-1 transition-colors"
-              title="Remove profile picture"
+              title={t('remove_photo', 'Remove Photo')}
             >
               <span className="material-symbols-outlined text-xs">delete</span>
-              <span>Remove Photo</span>
+              <span>{t('remove_photo', 'Remove Photo')}</span>
             </button>
           </div>
 
@@ -214,9 +222,11 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
             <h3 className="font-serif font-bold text-2xl">{artisan.name}</h3>
             <BlueVerifiedBadge size={20} />
           </div>
-          <p className="text-xs font-serif font-semibold text-[#B5451B] mt-0.5">{artisan.title}</p>
+          <p className="text-xs font-serif font-semibold text-[#B5451B] mt-0.5">
+            {t('artisan_default_title', artisan.title)}
+          </p>
           <p className="text-xs opacity-75 font-sans mt-0.5">
-            {artisan.location} • {artisan.craft}
+            {artisan.location} • {t('artisan_default_craft', artisan.craft)}
           </p>
 
           {/* Contact Details - Display only provided mobile and email */}
@@ -259,7 +269,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
 
           {/* Artisan Bio & Story quote */}
           <p className="text-xs opacity-80 font-sans leading-relaxed mt-3 px-2 italic">
-            "{artisan.storyQuote || artisan.bio}"
+            "{t('artisan_story_quote', artisan.storyQuote || artisan.bio)}"
           </p>
 
           {/* Prominent Edit Profile Button */}
@@ -287,24 +297,24 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
         <div className="flex items-center justify-between">
           <h4 className="font-serif font-bold text-base flex items-center gap-2">
             <span className="material-symbols-outlined text-[#B5451B] text-xl">photo_library</span>
-            <span>Recent Photos ({recentPhotos.length})</span>
+            <span>{t('recent_photos', 'Recent Photos')} ({recentPhotos.length})</span>
           </h4>
           <button
             onClick={() => directGalleryInputRef.current?.click()}
             className="flex items-center gap-1 text-[11px] font-bold text-[#B5451B] dark:text-[#FFA680] bg-[#B5451B]/15 hover:bg-[#B5451B]/25 px-3 py-1 rounded-full border border-[#B5451B]/30 transition-colors"
           >
             <span className="material-symbols-outlined text-sm">add_photo_alternate</span>
-            <span>Upload Photo</span>
+            <span>{t('upload_photo', 'Upload Photo')}</span>
           </button>
         </div>
 
         <p className="text-xs opacity-75 font-sans">
-          Photos are saved permanently across page refreshes. Tap the <strong>✕</strong> cross on any photo to remove it.
+          {t('recent_photos_desc', 'Photos are saved permanently across page refreshes. Tap the ✕ cross on any photo to remove it.')}
         </p>
 
         {recentPhotos.length === 0 ? (
           <div className="p-6 text-center rounded-2xl border-2 border-dashed border-[#22331E]/20 text-xs opacity-70">
-            No recent photos uploaded. Tap "Upload Photo" to add your craft pictures.
+            {t('no_recent_photos', 'No recent photos uploaded. Tap "Upload Photo" to add your craft pictures.')}
           </div>
         ) : (
           <div className="grid grid-cols-3 gap-2.5 pt-1">
@@ -326,7 +336,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
                     handleRemovePhoto(idx);
                   }}
                   className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-red-600 hover:bg-red-700 text-white flex items-center justify-center shadow-md active:scale-90 transition-transform z-10"
-                  title="Remove this photo"
+                  title={t('delete_photo', 'Remove this photo')}
                 >
                   <span className="material-symbols-outlined text-[13px] font-bold">close</span>
                 </button>
@@ -387,7 +397,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
           {/* WhatsApp Action */}
           <button
             onClick={() => handleOpenSocialRedirect('whatsapp')}
-            title="Share on WhatsApp"
+            title={`${t('share_on_social', 'Share on')} WhatsApp`}
             className="py-2.5 px-1 bg-[#25D366]/15 hover:bg-[#25D366]/25 border border-[#25D366]/40 rounded-2xl flex flex-col items-center justify-center gap-1.5 transition-all active:scale-95 group"
           >
             <WhatsAppIcon size={26} />
@@ -399,7 +409,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
           {/* Instagram Action */}
           <button
             onClick={() => handleOpenSocialRedirect('instagram')}
-            title="Share on Instagram"
+            title={`${t('share_on_social', 'Share on')} Instagram`}
             className="py-2.5 px-1 bg-gradient-to-tr from-[#F58529]/15 via-[#DD2A7B]/15 to-[#8134AF]/15 hover:opacity-80 border border-[#DD2A7B]/40 rounded-2xl flex flex-col items-center justify-center gap-1.5 transition-all active:scale-95 group"
           >
             <InstagramIcon size={26} />
@@ -411,7 +421,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
           {/* Facebook Action */}
           <button
             onClick={() => handleOpenSocialRedirect('facebook')}
-            title="Share on Facebook"
+            title={`${t('share_on_social', 'Share on')} Facebook`}
             className="py-2.5 px-1 bg-[#1877F2]/15 hover:bg-[#1877F2]/25 border border-[#1877F2]/40 rounded-2xl flex flex-col items-center justify-center gap-1.5 transition-all active:scale-95 group"
           >
             <FacebookIcon size={26} />
@@ -423,11 +433,17 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
           {/* X (Twitter) Action with Official X Logo */}
           <button
             onClick={() => handleOpenSocialRedirect('x')}
-            title="Share on X"
-            className="py-2.5 px-1 bg-black/10 hover:bg-black/20 dark:bg-white/10 dark:hover:bg-white/20 border border-black/20 dark:border-white/20 rounded-2xl flex flex-col items-center justify-center gap-1.5 transition-all active:scale-95 group text-black dark:text-white"
+            title={`${t('share_on_social', 'Share on')} X`}
+            className={`py-2.5 px-1 rounded-2xl flex flex-col items-center justify-center gap-1.5 transition-all active:scale-95 group border ${
+              isDark
+                ? 'bg-white/10 hover:bg-white/20 border-white/20 text-white'
+                : 'bg-black/5 hover:bg-black/10 border-black/20 text-black'
+            }`}
           >
-            <XIcon size={24} className="text-black dark:text-white" />
-            <span className="text-[9.5px] font-bold font-sans text-black dark:text-white whitespace-nowrap text-center">
+            <XIcon size={24} className={isDark ? 'text-white' : '!text-black'} />
+            <span className={`text-[9.5px] font-bold font-sans whitespace-nowrap text-center ${
+              isDark ? 'text-white' : '!text-black'
+            }`}>
               X
             </span>
           </button>
@@ -580,7 +596,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
               </div>
               <div>
                 <p className="font-serif font-bold text-xs">
-                  {t('logout', 'Log Out / साइन आउट')}
+                  {t('logout', 'Log Out')}
                 </p>
                 <p className="text-[10px] opacity-75">
                   {t('logout_desc', 'Sign out of your artisan account on this device')}
@@ -653,9 +669,14 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
               <span className="material-symbols-outlined text-2xl">logout</span>
             </div>
             <div>
-              <h4 className="font-serif font-bold text-lg">Log Out of ShilpSetu?</h4>
+              <h4 className="font-serif font-bold text-lg">
+                {t('logout_confirm_title', 'Log Out of ShilpSetu?')}
+              </h4>
               <p className="text-xs opacity-75 mt-1 font-sans leading-relaxed">
-                You will be returned to the launch registration screen. You can sign back in anytime using your registered mobile number.
+                {t(
+                  'logout_confirm_desc',
+                  'You will be returned to the launch registration screen. You can sign back in anytime using your registered mobile number.'
+                )}
               </p>
             </div>
             <div className="flex gap-2.5 pt-2">
@@ -665,11 +686,9 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
                   sound.playTap();
                   setShowLogoutModal(false);
                 }}
-                className={`flex-1 py-2.5 rounded-2xl border text-xs font-serif font-bold transition-colors ${
-                  isDark ? 'border-[#2D3A2B] hover:bg-white/5' : 'border-[#22331E]/20 hover:bg-black/5'
-                }`}
+                className="flex-1 py-2.5 rounded-2xl border border-red-500/30 bg-red-500/10 hover:bg-red-500/20 text-red-600 dark:text-red-400 text-xs font-serif font-bold transition-colors active:scale-95"
               >
-                Cancel
+                {t('cancel', 'Cancel')}
               </button>
               <button
                 type="button"
@@ -682,7 +701,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
                 }}
                 className="flex-1 py-2.5 rounded-2xl bg-red-600 hover:bg-red-700 text-white text-xs font-serif font-bold shadow-md active:scale-95 transition-all"
               >
-                Yes, Log Out
+                {t('yes_logout', 'Yes, Log Out')}
               </button>
             </div>
           </div>

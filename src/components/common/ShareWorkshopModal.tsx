@@ -4,6 +4,7 @@ import { QRCodeSVG } from 'qrcode.react';
 import { ArtisanProfile } from '../../types';
 import { BlueVerifiedBadge, WhatsAppIcon, XIcon, FacebookIcon } from './SocialIcons';
 import { sound } from '../../services/sound';
+import { useTranslation } from '../../services/translations';
 
 interface ShareWorkshopModalProps {
   isOpen: boolean;
@@ -18,6 +19,7 @@ export const ShareWorkshopModal: React.FC<ShareWorkshopModalProps> = ({
   artisan,
   isDark = false,
 }) => {
+  const { t } = useTranslation();
   const [copied, setCopied] = useState(false);
   const [downloading, setDownloading] = useState(false);
   const qrRef = useRef<HTMLDivElement>(null);
@@ -157,10 +159,10 @@ export const ShareWorkshopModal: React.FC<ShareWorkshopModalProps> = ({
           {/* Header */}
           <div className="flex items-center justify-center gap-1.5 mb-1">
             <span className="material-symbols-outlined text-[#B5451B] text-xl">qr_code_2</span>
-            <h3 className="font-serif font-bold text-lg">Workshop Storefront & QR</h3>
+            <h3 className="font-serif font-bold text-lg">{t('workshop_storefront_qr', 'Workshop Storefront & QR')}</h3>
           </div>
           <p className="text-xs opacity-75 font-sans mb-4">
-            Display this QR at your craft stall or share the digital link with buyers.
+            {t('display_qr_sub', 'Display this QR at your craft stall or share the digital link with buyers.')}
           </p>
 
           {/* Standee QR Card Container */}
@@ -239,7 +241,7 @@ export const ShareWorkshopModal: React.FC<ShareWorkshopModalProps> = ({
                 <span className="material-symbols-outlined text-xs">
                   {copied ? 'check' : 'content_copy'}
                 </span>
-                <span>{copied ? 'Copied' : 'Copy'}</span>
+                <span>{copied ? t('copied', 'Copied') : t('copy', 'Copy')}</span>
               </button>
             </div>
           </div>
@@ -247,7 +249,7 @@ export const ShareWorkshopModal: React.FC<ShareWorkshopModalProps> = ({
           {/* Quick Direct Share Buttons */}
           <div className="space-y-2 mb-4">
             <span className="text-[10px] font-bold uppercase tracking-wider text-current/60 block text-left">
-              Share Workshop Directly:
+              {t('share_workshop_directly', 'Share Workshop Directly:')}
             </span>
             <div className="grid grid-cols-3 gap-2">
               <button
@@ -284,7 +286,7 @@ export const ShareWorkshopModal: React.FC<ShareWorkshopModalProps> = ({
               <span className="material-symbols-outlined text-base">
                 {downloading ? 'hourglass_top' : 'download'}
               </span>
-              <span>{downloading ? 'Exporting PNG...' : 'Download QR Standee'}</span>
+              <span>{downloading ? t('exporting_png', 'Exporting PNG...') : t('download_qr_standee', 'Download QR Standee')}</span>
             </button>
 
             <button
@@ -298,7 +300,7 @@ export const ShareWorkshopModal: React.FC<ShareWorkshopModalProps> = ({
                   : 'bg-[#EFE4CF] border-[#22331E]/15 text-[#1A1815]'
               }`}
             >
-              Done
+              {t('done', 'Done')}
             </button>
           </div>
         </motion.div>

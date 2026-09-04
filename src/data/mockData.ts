@@ -1,8 +1,8 @@
 import { ArtisanProfile, ProductItem, ActivityItem, StoryAvatar, BulkInquiry, OrderItem, LanguageOption } from '../types';
 
 export const LANGUAGES: LanguageOption[] = [
-  { code: 'hi', label: 'Hindi', nativeLabel: 'हिन्दी' },
   { code: 'en', label: 'English', nativeLabel: 'English' },
+  { code: 'hi', label: 'Hindi', nativeLabel: 'हिन्दी' },
   { code: 'as', label: 'Assamese', nativeLabel: 'অসমীয়া' },
   { code: 'bn', label: 'Bengali', nativeLabel: 'বাংলা' },
   { code: 'brx', label: 'Bodo', nativeLabel: 'बड़ो' },

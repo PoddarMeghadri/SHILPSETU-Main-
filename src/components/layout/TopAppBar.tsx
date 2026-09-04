@@ -4,13 +4,13 @@ import { ArtisanProfile, LanguageCode, ScreenId } from '../../types';
 import { LANGUAGES } from '../../data/mockData';
 import { sound } from '../../services/sound';
 import { ShilpSetuLogo } from '../common/ShilpSetuLogo';
-import { useTranslation } from '../../services/translations';
+import { useLanguage } from '../../context/LanguageContext';
 
 interface TopAppBarProps {
   currentScreen: ScreenId;
   artisan: ArtisanProfile;
-  currentLanguage: LanguageCode;
-  onLanguageChange: (lang: LanguageCode) => void;
+  currentLanguage?: LanguageCode;
+  onLanguageChange?: (lang: LanguageCode) => void;
   onNavigate: (screen: ScreenId) => void;
   isScrolled?: boolean;
   isDark?: boolean;
@@ -29,11 +29,12 @@ export const TopAppBar: React.FC<TopAppBarProps> = ({
   onToggleTheme,
   onOpenVoiceAssistant,
 }) => {
-  const { t } = useTranslation(currentLanguage);
+  const { language: contextLanguage, setLanguage, t } = useLanguage();
+  const effectiveLanguage = currentLanguage || contextLanguage;
   const [showLangMenu, setShowLangMenu] = useState(false);
   const [langSearch, setLangSearch] = useState('');
 
-  const activeLangObj = LANGUAGES.find((l) => l.code === currentLanguage) || LANGUAGES[0];
+  const activeLangObj = LANGUAGES.find((l) => l.code === effectiveLanguage) || LANGUAGES[0];
 
   const filteredLanguages = LANGUAGES.filter(
     (l) =>
@@ -220,12 +221,13 @@ export const TopAppBar: React.FC<TopAppBarProps> = ({
                       key={lang.code}
                       onClick={() => {
                         sound.playTap();
-                        onLanguageChange(lang.code);
+                        setLanguage(lang.code);
+                        onLanguageChange?.(lang.code);
                         setShowLangMenu(false);
                         setLangSearch('');
                       }}
                       className={`flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-sm transition-colors ${
-                        currentLanguage === lang.code
+                        effectiveLanguage === lang.code
                           ? 'bg-[#B5451B] text-white font-semibold shadow-xs'
                           : isDark
                           ? 'hover:bg-[#252E22] text-[#F4ECDE]'
@@ -238,7 +240,7 @@ export const TopAppBar: React.FC<TopAppBarProps> = ({
                   ))
                 ) : (
                   <div className="text-center py-4 text-xs opacity-60">
-                    No language found
+                    {t('no_language_found', 'No language found')}
                   </div>
                 )}
               </div>

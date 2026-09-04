@@ -58,18 +58,35 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
   const [formData, setFormData] = useState<ArtisanProfile>({ ...artisan });
   const [selectedState, setSelectedState] = useState<string>('Uttar Pradesh');
   const [selectedCity, setSelectedCity] = useState<string>('Varanasi');
-  const [recentPhotos, setRecentPhotos] = useState<string[]>(() => {
-    const saved = localStorage.getItem('shilpsetu_recent_photos');
+  const [uploadedPortraits, setUploadedPortraits] = useState<string[]>(() => {
+    const saved = localStorage.getItem('shilpsetu_uploaded_portraits');
     if (saved) {
       try {
-        return JSON.parse(saved);
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
       } catch (_) {}
     }
-    return artisan.recentPhotos || [
-      'https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?w=600&auto=format&fit=crop&q=80',
-      'https://images.unsplash.com/photo-1578749556568-bc2c40e68b61?w=600&auto=format&fit=crop&q=80',
-      'https://images.unsplash.com/photo-1612196808214-b8e1d6145a8c?w=600&auto=format&fit=crop&q=80',
-    ];
+    return [artisan.avatarUrl || DEFAULT_AVATAR];
+  });
+  const [selectedPortraitForDelete, setSelectedPortraitForDelete] = useState<string | null>(artisan.avatarUrl || null);
+
+  const [recentPhotos, setRecentPhotos] = useState<string[]>(() => {
+    const saved = localStorage.getItem('shilpsetu_recent_photos');
+    let list: string[] = [];
+    if (saved) {
+      try {
+        list = JSON.parse(saved);
+      } catch (_) {}
+    } else {
+      list = artisan.recentPhotos || [
+        'https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?w=600&auto=format&fit=crop&q=80',
+        'https://images.unsplash.com/photo-1578749556568-bc2c40e68b61?w=600&auto=format&fit=crop&q=80',
+        'https://images.unsplash.com/photo-1612196808214-b8e1d6145a8c?w=600&auto=format&fit=crop&q=80',
+      ];
+    }
+    // Never include avatar in recent photos
+    const currentAvatar = artisan.avatarUrl;
+    return list.filter((p) => p !== currentAvatar);
   });
   const [isSaving, setIsSaving] = useState(false);
 
@@ -117,14 +134,31 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
         const resultUrl = event.target?.result as string;
         if (resultUrl) {
           setFormData((prev) => ({ ...prev, avatarUrl: resultUrl }));
-          // Also add to recent photos
-          const updatedPhotos = [resultUrl, ...recentPhotos];
-          setRecentPhotos(updatedPhotos);
-          localStorage.setItem('shilpsetu_recent_photos', JSON.stringify(updatedPhotos));
+          setSelectedPortraitForDelete(resultUrl);
+          const updatedPortraits = [resultUrl, ...uploadedPortraits.filter((p) => p !== resultUrl)];
+          setUploadedPortraits(updatedPortraits);
+          localStorage.setItem('shilpsetu_uploaded_portraits', JSON.stringify(updatedPortraits));
           sound.playSuccess();
         }
       };
       reader.readAsDataURL(file);
+    }
+  };
+
+  // Delete a specific uploaded portrait
+  const handleDeletePortrait = (portraitUrl: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    sound.playTap();
+    const updated = uploadedPortraits.filter((p) => p !== portraitUrl);
+    setUploadedPortraits(updated);
+    localStorage.setItem('shilpsetu_uploaded_portraits', JSON.stringify(updated));
+
+    if (formData.avatarUrl === portraitUrl) {
+      const nextAvatar = updated[0] || DEFAULT_AVATAR;
+      setFormData((prev) => ({ ...prev, avatarUrl: nextAvatar }));
+      setSelectedPortraitForDelete(nextAvatar);
+    } else if (selectedPortraitForDelete === portraitUrl) {
+      setSelectedPortraitForDelete(null);
     }
   };
 
@@ -159,6 +193,7 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
   const handleRemoveProfilePicture = () => {
     sound.playTap();
     setFormData((prev) => ({ ...prev, avatarUrl: DEFAULT_AVATAR }));
+    setSelectedPortraitForDelete(DEFAULT_AVATAR);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -168,6 +203,11 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
 
     const combinedLocation = `${selectedCity}, ${selectedState}`;
 
+    // Ensure recentPhotos contains NO uploaded portraits
+    const cleanedRecentPhotos = recentPhotos.filter(
+      (p) => p !== formData.avatarUrl && !uploadedPortraits.includes(p)
+    );
+
     setTimeout(() => {
       const updatedProfile: ArtisanProfile = {
         ...formData,
@@ -175,7 +215,7 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
         mobile: formData.mobile?.trim() || artisan.mobile,
         email: formData.email?.trim() ? formData.email.trim() : undefined,
         location: combinedLocation,
-        recentPhotos,
+        recentPhotos: cleanedRecentPhotos,
         completeness: Math.min(
           100,
           70 + (formData.udyamNumber ? 15 : 0) + (formData.bio.length > 30 ? 15 : 0)
@@ -183,7 +223,7 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
       };
       onSave(updatedProfile);
       localStorage.setItem('shilpsetu_artisan', JSON.stringify(updatedProfile));
-      localStorage.setItem('shilpsetu_recent_photos', JSON.stringify(recentPhotos));
+      localStorage.setItem('shilpsetu_recent_photos', JSON.stringify(cleanedRecentPhotos));
       setIsSaving(false);
       onClose();
     }, 400);
@@ -229,17 +269,22 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Avatar Selector with Photo Upload & Remove Profile Picture */}
+            {/* Choose Artisan Portrait section - all uploaded profile pics to be shown there only with delete icon on click */}
             <div className="space-y-2.5 bg-black/5 dark:bg-white/5 p-3.5 rounded-2xl border border-[#22331E]/10">
               <div className="flex items-center justify-between">
-                <label className="text-xs font-bold font-serif uppercase tracking-wider text-[#B5451B]">
-                  {t('choose_portrait', 'Artisan Profile Picture')}
-                </label>
+                <div>
+                  <label className="text-xs font-bold font-serif uppercase tracking-wider text-[#B5451B]">
+                    {t('choose_portrait', 'Choose Artisan Portrait')}
+                  </label>
+                  <p className="text-[10px] opacity-70">
+                    {t('click_portrait_hint', 'Click an uploaded portrait to select or delete.')}
+                  </p>
+                </div>
                 <div className="flex items-center gap-1.5">
                   <button
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
-                    className="flex items-center gap-1 text-[11px] font-bold text-[#B5451B] bg-[#B5451B]/10 hover:bg-[#B5451B]/20 px-2.5 py-1 rounded-full transition-colors"
+                    className="flex items-center gap-1 text-[11px] font-bold text-[#B5451B] bg-[#B5451B]/10 hover:bg-[#B5451B]/20 px-2.5 py-1 rounded-full transition-colors cursor-pointer active:scale-95"
                   >
                     <span className="material-symbols-outlined text-sm">photo_camera</span>
                     <span>{t('upload_photo', 'Upload')}</span>
@@ -249,11 +294,11 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
                   <button
                     type="button"
                     onClick={handleRemoveProfilePicture}
-                    className="flex items-center gap-1 text-[11px] font-bold text-red-500 bg-red-500/10 hover:bg-red-500/20 px-2.5 py-1 rounded-full transition-colors"
-                    title="Remove custom profile picture"
+                    className="flex items-center gap-1 text-[11px] font-bold text-red-500 bg-red-500/10 hover:bg-red-500/20 px-2.5 py-1 rounded-full transition-colors cursor-pointer"
+                    title={t('reset_default_portrait', 'Reset to default portrait')}
                   >
-                    <span className="material-symbols-outlined text-sm">delete</span>
-                    <span>Remove</span>
+                    <span className="material-symbols-outlined text-sm">restart_alt</span>
+                    <span>{t('reset', 'Reset')}</span>
                   </button>
                 </div>
               </div>
@@ -268,7 +313,7 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
                 id="artisan-avatar-upload"
               />
 
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 pt-1">
                 {/* Active Main Avatar Preview */}
                 <div className="relative shrink-0">
                   <img
@@ -279,37 +324,60 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
                   <button
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
-                    className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-[#B5451B] text-white flex items-center justify-center shadow-xs border border-white"
-                    title="Upload Custom Photo"
+                    className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-[#B5451B] text-white flex items-center justify-center shadow-xs border border-white cursor-pointer"
+                    title={t('upload_custom_photo', 'Upload Custom Photo')}
                   >
                     <span className="material-symbols-outlined text-[13px]">add_a_photo</span>
                   </button>
                 </div>
 
-                {/* Avatar Presets */}
-                <div className="flex-1 overflow-x-auto py-1 flex gap-2 no-scrollbar items-center">
-                  {AVATAR_PRESETS.map((preset, idx) => (
-                    <button
-                      type="button"
-                      key={idx}
-                      onClick={() => {
-                        sound.playTap();
-                        setFormData({ ...formData, avatarUrl: preset.url });
-                      }}
-                      className={`w-11 h-11 rounded-full overflow-hidden border-2 shrink-0 transition-all ${
-                        formData.avatarUrl === preset.url
-                          ? 'border-[#B5451B] scale-105 shadow-md ring-2 ring-[#B5451B]/30'
-                          : 'border-transparent opacity-70 hover:opacity-100'
-                      }`}
-                      title={preset.name}
-                    >
-                      <img
-                        src={preset.url}
-                        alt={preset.name}
-                        className="w-full h-full object-cover"
-                      />
-                    </button>
-                  ))}
+                {/* Uploaded Portraits Gallery: All uploaded profile pics shown here only */}
+                <div className="flex-1 overflow-x-auto py-2 flex gap-2.5 no-scrollbar items-center">
+                  {uploadedPortraits.length === 0 ? (
+                    <span className="text-xs opacity-60 italic">{t('no_uploaded_portraits', 'No uploaded portraits yet.')}</span>
+                  ) : (
+                    uploadedPortraits.map((portrait, idx) => {
+                      const isSelected = formData.avatarUrl === portrait;
+                      const isClicked = selectedPortraitForDelete === portrait || isSelected;
+
+                      return (
+                        <div key={idx} className="relative shrink-0 group">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              sound.playTap();
+                              setFormData((prev) => ({ ...prev, avatarUrl: portrait }));
+                              setSelectedPortraitForDelete(portrait);
+                            }}
+                            className={`w-12 h-12 rounded-full overflow-hidden border-2 shrink-0 transition-all cursor-pointer ${
+                              isSelected
+                                ? 'border-[#B5451B] scale-105 shadow-md ring-2 ring-[#B5451B]/40'
+                                : 'border-transparent opacity-75 hover:opacity-100 hover:scale-105'
+                            }`}
+                            title={t('click_to_select_portrait', 'Click to select this portrait')}
+                          >
+                            <img
+                              src={portrait}
+                              alt={`Uploaded Portrait ${idx + 1}`}
+                              className="w-full h-full object-cover"
+                            />
+                          </button>
+
+                          {/* Delete icon on the top right side of the pic when clicked */}
+                          {isClicked && (
+                            <button
+                              type="button"
+                              onClick={(e) => handleDeletePortrait(portrait, e)}
+                              className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-red-600 hover:bg-red-700 text-white flex items-center justify-center shadow-md z-10 active:scale-90 transition-transform cursor-pointer"
+                              title={t('delete_portrait', 'Delete this portrait')}
+                            >
+                              <span className="material-symbols-outlined text-[12px] font-bold">close</span>
+                            </button>
+                          )}
+                        </div>
+                      );
+                    })
+                  )}
                 </div>
               </div>
             </div>
@@ -330,7 +398,7 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
                       ? 'bg-[#121411] border-[#2D3A2B] text-white'
                       : 'bg-white border-[#22331E]/20 text-[#1A1815]'
                   }`}
-                  placeholder="e.g. Ranjit Prajapati"
+                  placeholder={t('placeholder_artisan_name', 'e.g. Ranjit Prajapati')}
                 />
               </div>
 
@@ -348,7 +416,7 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
                       ? 'bg-[#121411] border-[#2D3A2B] text-white'
                       : 'bg-white border-[#22331E]/20 text-[#1A1815]'
                   }`}
-                  placeholder="e.g. Master Clay Sculptor & Potter"
+                  placeholder={t('placeholder_trade_title', 'e.g. Master Clay Sculptor & Potter')}
                 />
               </div>
             </div>
@@ -357,17 +425,17 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
             <div className="bg-black/5 dark:bg-white/5 p-3.5 rounded-2xl border border-[#22331E]/10 space-y-3">
               <div className="flex items-center gap-1.5 text-xs font-bold font-serif uppercase tracking-wider text-[#B5451B]">
                 <span className="material-symbols-outlined text-base">contact_phone</span>
-                <span>Contact Details (Mobile & Email)</span>
+                <span>{t('contact_details', 'Contact Details (Mobile & Email)')}</span>
               </div>
 
               {/* 1. Mobile Number Option */}
               <div>
                 <div className="flex items-center justify-between mb-1">
                   <label className="block text-[11px] font-medium opacity-80">
-                    Registered Mobile Number <span className="text-red-500">*</span>
+                    {t('reg_mobile_num', 'Registered Mobile Number')} <span className="text-red-500">*</span>
                   </label>
                   <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#B5451B]/10 text-[#B5451B] font-bold">
-                    OTP Login
+                    {t('otp_login_badge', 'OTP Login')}
                   </span>
                 </div>
                 <div className="relative flex items-center">
@@ -389,11 +457,11 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
                         ? 'bg-[#121411] border-[#2D3A2B] text-white'
                         : 'bg-white border-[#22331E]/20 text-[#1A1815]'
                     }`}
-                    placeholder="10-digit mobile number"
+                    placeholder={t('placeholder_mobile', '10-digit mobile number')}
                   />
                 </div>
                 <p className="text-[10px] opacity-60 mt-1">
-                  Primary mobile number used for OTP verification and GeM / buyer inquiries.
+                  {t('mobile_help_text', 'Primary mobile number used for OTP verification and GeM / buyer inquiries.')}
                 </p>
               </div>
 
@@ -401,7 +469,7 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
               <div>
                 <div className="flex items-center justify-between mb-1">
                   <label className="block text-[11px] font-medium opacity-80">
-                    Email Address <span className="text-[10px] opacity-60 font-normal">(Optional)</span>
+                    {t('email_address', 'Email Address')} <span className="text-[10px] opacity-60 font-normal">{t('optional', '(Optional)')}</span>
                   </label>
                   {formData.email && formData.email.trim().length > 0 && (
                     <button
@@ -413,7 +481,7 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
                       className="text-[10px] text-red-500 hover:text-red-600 font-medium underline flex items-center gap-0.5"
                     >
                       <span className="material-symbols-outlined text-[11px]">close</span>
-                      <span>Remove Email</span>
+                      <span>{t('remove_email', 'Remove Email')}</span>
                     </button>
                   )}
                 </div>
@@ -430,11 +498,11 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
                         ? 'bg-[#121411] border-[#2D3A2B] text-white'
                         : 'bg-white border-[#22331E]/20 text-[#1A1815]'
                     }`}
-                    placeholder="Enter email address (leave empty if not applicable)"
+                    placeholder={t('placeholder_email', 'Enter email address (leave empty if not applicable)')}
                   />
                 </div>
                 <p className="text-[10px] opacity-60 mt-1">
-                  Optional. If left blank, no email address will be displayed on your profile.
+                  {t('email_help_text', 'Optional. If left blank, no email address will be displayed on your profile.')}
                 </p>
               </div>
             </div>
@@ -443,14 +511,14 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
             <div className="bg-black/5 dark:bg-white/5 p-3.5 rounded-2xl border border-[#22331E]/10 space-y-2.5">
               <div className="flex items-center gap-1.5 text-xs font-bold font-serif uppercase tracking-wider text-[#B5451B]">
                 <span className="material-symbols-outlined text-base">location_on</span>
-                <span>Artisan Location (State & City)</span>
+                <span>{t('artisan_location_heading', 'Artisan Location (State & City)')}</span>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 {/* State Dropdown */}
                 <div>
                   <label className="block text-[11px] font-medium opacity-80 mb-1">
-                    Select State <span className="text-red-500">*</span>
+                    {t('select_state', 'Select State')} <span className="text-red-500">*</span>
                   </label>
                   <select
                     value={selectedState}
@@ -472,7 +540,7 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
                 {/* City Dropdown (Filtered strictly by selected State) */}
                 <div>
                   <label className="block text-[11px] font-medium opacity-80 mb-1">
-                    Select City <span className="text-red-500">*</span>
+                    {t('select_city', 'Select City')} <span className="text-red-500">*</span>
                   </label>
                   <select
                     value={selectedCity}
@@ -493,7 +561,7 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
               </div>
 
               <p className="text-[10px] opacity-70 italic">
-                Active Location: <strong>{selectedCity}, {selectedState}</strong>
+                {t('active_location_label', 'Active Location:')} <strong>{selectedCity}, {selectedState}</strong>
               </p>
             </div>
 
@@ -502,7 +570,7 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-1.5 text-xs font-bold font-serif uppercase tracking-wider text-[#B5451B]">
                   <span className="material-symbols-outlined text-base">photo_library</span>
-                  <span>Recent Workshop Pictures ({recentPhotos.length})</span>
+                  <span>{t('recent_workshop_pictures', 'Recent Workshop Pictures')} ({recentPhotos.length})</span>
                 </div>
                 <button
                   type="button"
@@ -510,7 +578,7 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
                   className="flex items-center gap-1 text-[11px] font-bold text-[#B5451B] bg-[#B5451B]/10 hover:bg-[#B5451B]/20 px-2.5 py-1 rounded-full transition-colors"
                 >
                   <span className="material-symbols-outlined text-sm">add_photo_alternate</span>
-                  <span>Add Photo</span>
+                  <span>{t('add_photo', 'Add Photo')}</span>
                 </button>
               </div>
 
@@ -526,7 +594,7 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
 
               {recentPhotos.length === 0 ? (
                 <div className="p-4 text-center rounded-xl border border-dashed border-[#22331E]/20 text-xs opacity-70">
-                  No pictures uploaded yet. Tap "Add Photo" above.
+                  {t('no_workshop_pictures', 'No pictures uploaded yet. Tap "Add Photo" above.')}
                 </div>
               ) : (
                 <div className="grid grid-cols-3 gap-2 pt-1">
@@ -545,7 +613,7 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
                         type="button"
                         onClick={() => handleRemoveRecentPhoto(idx)}
                         className="absolute top-1 right-1 w-6 h-6 rounded-full bg-red-600 text-white flex items-center justify-center shadow-md hover:bg-red-700 active:scale-90 transition-transform z-10"
-                        title="Remove this photo"
+                        title={t('delete_photo', 'Remove this photo')}
                       >
                         <span className="material-symbols-outlined text-sm font-bold">close</span>
                       </button>
@@ -570,12 +638,12 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
                       : 'bg-white border-[#22331E]/20 text-[#1A1815]'
                   }`}
                 >
-                  <option value="Terracotta & Heritage Pottery">Terracotta Pottery</option>
-                  <option value="Banarasi Handloom Weaving">Handloom Weaving</option>
-                  <option value="Channapatna Wooden Toys">Wood Sculpture</option>
-                  <option value="Madhubani Folk Painting">Folk Painting</option>
-                  <option value="Bidriware Metal Inlay">Metalwork & Inlay</option>
-                  <option value="Pashmina Shawls & Embroidery">Textile & Zari</option>
+                  <option value="Terracotta & Heritage Pottery">{t('craft_terracotta', 'Terracotta Pottery')}</option>
+                  <option value="Banarasi Handloom Weaving">{t('craft_weaving', 'Handloom Weaving')}</option>
+                  <option value="Channapatna Wooden Toys">{t('craft_wood', 'Wood Sculpture')}</option>
+                  <option value="Madhubani Folk Painting">{t('craft_painting', 'Folk Painting')}</option>
+                  <option value="Bidriware Metal Inlay">{t('craft_metal', 'Metalwork & Inlay')}</option>
+                  <option value="Pashmina Shawls & Embroidery">{t('craft_embroidery', 'Textile & Zari')}</option>
                 </select>
               </div>
 
@@ -611,7 +679,7 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
                     ? 'bg-[#121411] border-[#2D3A2B] text-white'
                     : 'bg-white border-[#22331E]/20 text-[#1A1815]'
                 }`}
-                placeholder="Every lump of earth holds a song..."
+                placeholder={t('placeholder_philosophy', 'Every lump of earth holds a song...')}
               />
             </div>
 
@@ -628,7 +696,7 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
                     ? 'bg-[#121411] border-[#2D3A2B] text-white'
                     : 'bg-white border-[#22331E]/20 text-[#1A1815]'
                 }`}
-                placeholder="Describe your craft tradition..."
+                placeholder={t('placeholder_bio', 'Describe your craft tradition...')}
               />
             </div>
 
@@ -640,11 +708,7 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
                   sound.playTap();
                   onClose();
                 }}
-                className={`flex-1 py-3 rounded-2xl font-serif text-xs font-bold border transition-colors ${
-                  isDark
-                    ? 'border-[#2D3A2B] hover:bg-white/5 text-white'
-                    : 'border-[#22331E]/20 hover:bg-black/5 text-[#1A1815]'
-                }`}
+                className="flex-1 py-3 rounded-2xl font-serif text-xs font-bold border border-red-500/30 bg-red-500/10 hover:bg-red-500/20 text-red-600 dark:text-red-400 transition-colors active:scale-95 cursor-pointer"
               >
                 {t('cancel', 'Cancel')}
               </button>

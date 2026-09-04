@@ -21,9 +21,8 @@ export const SocialShareScreen: React.FC<SocialShareScreenProps> = ({
   artisan,
   onNavigate,
   isDark = false,
-  language = 'en',
 }) => {
-  const { t } = useTranslation(language);
+  const { t } = useTranslation();
   const [selectedProduct, setSelectedProduct] = useState<ProductItem>(products[0]);
   const [selectedTemplate, setSelectedTemplate] = useState<TemplateTheme>('festive');
   const [caption, setCaption] = useState<string>(

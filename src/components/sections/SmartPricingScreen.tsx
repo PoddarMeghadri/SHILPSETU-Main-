@@ -16,10 +16,9 @@ type DemandLevel = 'low' | 'moderate' | 'high' | 'festive';
 
 export const SmartPricingScreen: React.FC<SmartPricingProps> = ({
   onNavigate,
-  language = 'hi',
   isDark = false,
 }) => {
-  const { t } = useTranslation(language);
+  const { t } = useTranslation();
   const [hoursWorked, setHoursWorked] = useState<number>(5);
   const [materialCost, setMaterialCost] = useState<number>(140);
   const [demandLevel, setDemandLevel] = useState<DemandLevel>('high');

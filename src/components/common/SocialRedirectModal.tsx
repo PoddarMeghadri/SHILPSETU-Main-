@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { WhatsAppIcon, InstagramIcon, FacebookIcon, XIcon } from './SocialIcons';
 import { sound } from '../../services/sound';
+import { useTranslation } from '../../services/translations';
 
 export type SocialPlatformType = 'whatsapp' | 'instagram' | 'facebook' | 'x';
 
@@ -22,6 +23,7 @@ export const SocialRedirectModal: React.FC<SocialRedirectModalProps> = ({
   storeUrl = 'https://shilpsetu.org/artisan',
   isDark = false,
 }) => {
+  const { t } = useTranslation();
   const [copied, setCopied] = useState(false);
 
   if (!isOpen) return null;
@@ -44,8 +46,10 @@ export const SocialRedirectModal: React.FC<SocialRedirectModalProps> = ({
       textColor: 'text-[#128C7E] dark:text-[#25D366]',
       buttonBg: 'bg-[#25D366] hover:bg-[#1EBE5D] text-white',
       icon: <WhatsAppIcon size={36} />,
-      description:
-        'Ready to share with your customer list or WhatsApp Status. Craft story & catalog link will be formatted automatically.',
+      description: t(
+        'whatsapp_share_desc',
+        'Ready to share with your customer list or WhatsApp Status. Craft story & catalog link will be formatted automatically.'
+      ),
       getRedirectUrl: (cap, url) =>
         `https://api.whatsapp.com/send?text=${encodeURIComponent(cap + '\n\n' + url)}`,
     },
@@ -55,8 +59,10 @@ export const SocialRedirectModal: React.FC<SocialRedirectModalProps> = ({
       textColor: 'text-[#C13584] dark:text-[#F77737]',
       buttonBg: 'bg-gradient-to-tr from-[#F58529] via-[#DD2A7B] to-[#8134AF] text-white',
       icon: <InstagramIcon size={36} />,
-      description:
-        'Caption and hashtags will be copied to your clipboard so you can paste them directly when creating your Instagram Post or Story.',
+      description: t(
+        'instagram_share_desc',
+        'Caption and hashtags will be copied to your clipboard so you can paste them directly when creating your Instagram Post or Story.'
+      ),
       getRedirectUrl: () => 'https://www.instagram.com/',
     },
     facebook: {
@@ -65,8 +71,10 @@ export const SocialRedirectModal: React.FC<SocialRedirectModalProps> = ({
       textColor: 'text-[#1877F2]',
       buttonBg: 'bg-[#1877F2] hover:bg-[#1565C0] text-white',
       icon: <FacebookIcon size={36} />,
-      description:
-        'Publish directly to Facebook Marketplace, Craft Groups, or your Artisan Page to reach buyers across India.',
+      description: t(
+        'facebook_share_desc',
+        'Publish directly to Facebook Marketplace, Craft Groups, or your Artisan Page to reach buyers across India.'
+      ),
       getRedirectUrl: (cap, url) =>
         `https://www.facebook.com/sharer/sharer.php?quote=${encodeURIComponent(cap)}&u=${encodeURIComponent(url)}`,
     },
@@ -76,8 +84,10 @@ export const SocialRedirectModal: React.FC<SocialRedirectModalProps> = ({
       textColor: 'text-black dark:text-white',
       buttonBg: 'bg-black hover:bg-neutral-800 text-white dark:bg-white dark:text-black dark:hover:bg-neutral-200',
       icon: <XIcon size={36} />,
-      description:
-        'Post directly on X to showcase your master craft, tag #HandmadeInIndia & #VocalForLocal, and reach global art collectors.',
+      description: t(
+        'x_share_desc',
+        'Post directly on X to showcase your master craft, tag #HandmadeInIndia & #VocalForLocal, and reach global art collectors.'
+      ),
       getRedirectUrl: (cap, url) =>
         `https://x.com/intent/tweet?text=${encodeURIComponent(cap.slice(0, 240) + '...\n' + url)}`,
     },
@@ -139,7 +149,7 @@ export const SocialRedirectModal: React.FC<SocialRedirectModalProps> = ({
           </div>
 
           <h3 className="font-serif font-bold text-lg leading-tight mb-1">
-            Redirect to {currentPlatform.name}?
+            {t('redirect_to', 'Redirect to')} {currentPlatform.name}?
           </h3>
           <p className="text-xs opacity-75 font-sans leading-relaxed mb-4">
             {currentPlatform.description}
@@ -154,8 +164,8 @@ export const SocialRedirectModal: React.FC<SocialRedirectModalProps> = ({
             }`}
           >
             <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider mb-1 opacity-60">
-              <span>Ready for Posting</span>
-              <span>Auto-Formatted</span>
+              <span>{t('ready_for_posting', 'Ready for Posting')}</span>
+              <span>{t('auto_formatted', 'Auto-Formatted')}</span>
             </div>
             <p className="line-clamp-3 italic text-[11px] leading-snug">{captionText}</p>
           </div>
@@ -167,20 +177,16 @@ export const SocialRedirectModal: React.FC<SocialRedirectModalProps> = ({
                 sound.playTap();
                 onClose();
               }}
-              className={`flex-1 py-3 rounded-2xl border font-serif font-bold text-xs active:scale-95 transition-all ${
-                isDark
-                  ? 'bg-[#252E22] border-[#2D3A2B] text-[#F4ECDE] hover:bg-[#2D3A2B]'
-                  : 'bg-[#EFE4CF] border-[#22331E]/15 text-[#1A1815] hover:bg-[#EAE0CC]'
-              }`}
+              className="flex-1 py-3 rounded-2xl border border-red-500/30 bg-red-500/10 hover:bg-red-500/20 text-red-600 dark:text-red-400 font-serif font-bold text-xs active:scale-95 transition-all"
             >
-              Cancel
+              {t('cancel', 'Cancel')}
             </button>
 
             <button
               onClick={handleConfirmRedirect}
               className={`flex-2 py-3 px-4 rounded-2xl font-serif font-bold text-xs shadow-md flex items-center justify-center gap-1.5 active:scale-95 transition-all ${currentPlatform.buttonBg}`}
             >
-              <span>{copied ? 'Copied! Opening...' : `Open ${currentPlatform.name}`}</span>
+              <span>{copied ? t('copied_opening', 'Copied! Opening...') : `${t('open_app', 'Open')} ${currentPlatform.name}`}</span>
               <span className="material-symbols-outlined text-sm">open_in_new</span>
             </button>
           </div>

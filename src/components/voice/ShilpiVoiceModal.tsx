@@ -31,7 +31,8 @@ export const ShilpiVoiceModal: React.FC<ShilpiVoiceModalProps> = ({
   currentLanguage,
   isDark = false,
 }) => {
-  const { t } = useTranslation(currentLanguage);
+  const { t, language } = useTranslation();
+  const effectiveLanguage = currentLanguage || language;
 
   const [isListening, setIsListening] = useState<boolean>(false);
   const [transcript, setTranscript] = useState<string>('');

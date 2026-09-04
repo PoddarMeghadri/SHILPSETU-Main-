@@ -110,10 +110,9 @@ interface NotificationsScreenProps {
 
 export const NotificationsScreen: React.FC<NotificationsScreenProps> = ({
   onNavigate,
-  language = 'en',
   isDark = false,
 }) => {
-  const { t } = useTranslation(language);
+  const { t } = useTranslation();
   const [notifications, setNotifications] = useState<NotificationItemData[]>(INITIAL_NOTIFICATIONS);
   const [filter, setFilter] = useState<'all' | 'unread' | 'gem' | 'orders' | 'studio'>('all');
 
@@ -201,8 +200,8 @@ export const NotificationsScreen: React.FC<NotificationsScreenProps> = ({
           { key: 'all', label: t('all', 'All') },
           { key: 'unread', label: `${t('unread', 'Unread')} (${unreadCount})` },
           { key: 'orders', label: t('orders', 'Orders') },
-          { key: 'gem', label: 'GeM & Govt' },
-          { key: 'studio', label: 'AI Studio' },
+          { key: 'gem', label: t('gem_govt_tab', 'GeM & Govt') },
+          { key: 'studio', label: t('screen_studio', 'AI Studio') },
         ].map((tab) => {
           const isSelected = filter === tab.key;
           return (
@@ -271,7 +270,7 @@ export const NotificationsScreen: React.FC<NotificationsScreenProps> = ({
                   <div className="flex items-center gap-2 flex-wrap mb-1">
                     {item.badge && (
                       <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-[#22331E]/10 dark:bg-white/10 text-[#B5451B] dark:text-[#E8B84B]">
-                        {item.badge}
+                        {t(`notif_${item.id.replace(/-/g, '_')}_badge`, item.badge)}
                       </span>
                     )}
                     {item.amount && (
@@ -286,19 +285,21 @@ export const NotificationsScreen: React.FC<NotificationsScreenProps> = ({
                       isDark ? 'text-[#F4ECDE]' : 'text-[#22331E]'
                     }`}
                   >
-                    {item.title}
+                    {t(`notif_${item.id.replace(/-/g, '_')}_title`, item.title)}
                   </h3>
 
                   <p className="text-xs opacity-80 leading-relaxed font-sans mb-3">
-                    {item.description}
+                    {t(`notif_${item.id.replace(/-/g, '_')}_desc`, item.description)}
                   </p>
 
                   <div className="flex items-center justify-between pt-1 border-t border-current/10">
-                    <span className="text-[10px] opacity-60 font-medium">{item.timestamp}</span>
+                    <span className="text-[10px] opacity-60 font-medium">
+                      {t(`notif_${item.id.replace(/-/g, '_')}_time`, item.timestamp)}
+                    </span>
 
                     {item.actionLabel && (
                       <span className="inline-flex items-center gap-1 text-xs font-bold text-[#B5451B] hover:underline">
-                        <span>{item.actionLabel}</span>
+                        <span>{t(`notif_${item.id.replace(/-/g, '_')}_action`, item.actionLabel)}</span>
                         <span className="material-symbols-outlined text-sm">arrow_forward</span>
                       </span>
                     )}
@@ -332,7 +333,10 @@ export const NotificationsScreen: React.FC<NotificationsScreenProps> = ({
               {t('all_caught_up', 'All caught up!')}
             </h3>
             <p className="text-xs opacity-75 max-w-xs mx-auto">
-              No notifications found for this filter. New GeM orders, studio renders, and inquiries will appear here automatically.
+              {t(
+                'no_notifications_desc',
+                'No notifications found for this filter. New GeM orders, studio renders, and inquiries will appear here automatically.'
+              )}
             </p>
           </div>
         )}

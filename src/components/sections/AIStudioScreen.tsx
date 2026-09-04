@@ -17,10 +17,9 @@ export const AIStudioScreen: React.FC<AIStudioScreenProps> = ({
   products,
   onNavigate,
   onSelectProductForCatalog,
-  language = 'hi',
   isDark = false,
 }) => {
-  const { t } = useTranslation(language);
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<'camera' | 'gallery'>('camera');
   const [selectedProduct, setSelectedProduct] = useState<ProductItem>(products[0] || {} as ProductItem);
   const [isProcessing, setIsProcessing] = useState<boolean>(false);

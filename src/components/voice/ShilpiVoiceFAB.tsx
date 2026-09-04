@@ -1,5 +1,6 @@
 import React from 'react';
 import { sound } from '../../services/sound';
+import { useTranslation } from '../../services/translations';
 
 interface ShilpiVoiceFABProps {
   onClick: () => void;
@@ -9,8 +10,8 @@ interface ShilpiVoiceFABProps {
 
 export const ShilpiVoiceFAB: React.FC<ShilpiVoiceFABProps> = ({
   onClick,
-  isDark = false,
 }) => {
+  const { t } = useTranslation();
   return (
     <div className="fixed bottom-20 right-4 z-40">
       <button
@@ -34,7 +35,7 @@ export const ShilpiVoiceFAB: React.FC<ShilpiVoiceFABProps> = ({
             SHILPI AI
           </span>
           <span className="text-[9px] font-sans opacity-90 leading-none mt-0.5">
-            Tap to Speak
+            {t('tap_to_speak', 'Tap to Speak')}
           </span>
         </div>
       </button>

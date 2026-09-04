@@ -61,10 +61,9 @@ const STORY_PROMPTS: Record<StoryAngle, StoryPrompt> = {
 export const HeritageStoryScreen: React.FC<HeritageStoryProps> = ({
   artisan,
   onNavigate,
-  language = 'hi',
   isDark = false,
 }) => {
-  const { t } = useTranslation(language);
+  const { t } = useTranslation();
   const [selectedAngle, setSelectedAngle] = useState<StoryAngle>('lineage');
   const [isRecording, setIsRecording] = useState<boolean>(false);
   const [isGenerating, setIsGenerating] = useState<boolean>(false);

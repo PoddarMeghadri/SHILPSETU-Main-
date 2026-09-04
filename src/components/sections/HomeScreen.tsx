@@ -24,10 +24,9 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
   stories,
   onNavigate,
   onOpenVoiceAssistant,
-  language = 'hi',
   isDark = false,
 }) => {
-  const { t } = useTranslation(language);
+  const { t } = useTranslation();
   const [activeStory, setActiveStory] = useState<StoryItem | null>(null);
 
   return (
@@ -578,17 +577,21 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                 )}
 
                 <div>
-                  <h5 className="font-serif font-bold text-sm leading-tight">{act.title}</h5>
+                  <h5 className="font-serif font-bold text-sm leading-tight">
+                    {t(`act_${act.id.replace(/-/g, '_')}_title`, act.title)}
+                  </h5>
                   <p className="text-[11px] opacity-70 font-sans line-clamp-1 mt-0.5">
-                    {act.description}
+                    {t(`act_${act.id.replace(/-/g, '_')}_desc`, act.description)}
                   </p>
-                  <span className="text-[10px] opacity-50 font-sans">{act.timestamp}</span>
+                  <span className="text-[10px] opacity-50 font-sans">
+                    {t(`act_${act.id.replace(/-/g, '_')}_time`, act.timestamp)}
+                  </span>
                 </div>
               </div>
 
               {act.statusTag && (
                 <span className="shrink-0 text-[10px] font-bold px-2.5 py-1 rounded-full bg-[#B5451B]/15 text-[#B5451B] border border-[#B5451B]/20">
-                  {act.statusTag}
+                  {t(`act_${act.id.replace(/-/g, '_')}_tag`, act.statusTag)}
                 </span>
               )}
             </div>

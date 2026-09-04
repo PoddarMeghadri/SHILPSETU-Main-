@@ -16,6 +16,7 @@ export interface OnboardingUserData {
 interface OnboardingFlowProps {
   onComplete: (data: OnboardingUserData) => void;
   isDark?: boolean;
+  onToggleTheme?: () => void;
 }
 
 const CRAFT_OPTIONS = [
@@ -63,7 +64,11 @@ const CRAFT_OPTIONS = [
   },
 ];
 
-export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete, isDark = false }) => {
+export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({
+  onComplete,
+  isDark = false,
+  onToggleTheme,
+}) => {
   // Step 0: Splash / Logo Center Screen
   // Step 1: Personal Details (Full Name*, Mobile*, Email)
   // Step 2: 6-Digit Mock OTP Authorization
@@ -211,6 +216,30 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete, isDa
 
   return (
     <div className="fixed inset-0 z-50 bg-[#F4ECDE] dark:bg-[#121411] text-[#1A1815] dark:text-[#F4ECDE] overflow-y-auto flex flex-col justify-between selection:bg-[#B5451B]/20">
+      {/* Dedicated Light/Dark Theme Toggle Button for Login / Onboarding Screen */}
+      {onToggleTheme && (
+        <button
+          type="button"
+          onClick={() => {
+            sound.playTap();
+            onToggleTheme();
+          }}
+          className={`fixed top-4 right-4 z-60 flex items-center gap-1.5 px-3 py-1.5 rounded-full border shadow-md transition-all active:scale-95 cursor-pointer backdrop-blur-md ${
+            isDark
+              ? 'bg-[#1C221A]/90 border-[#2D3A2B] text-[#E8B84B] hover:bg-[#252E22]'
+              : 'bg-white/90 border-[#22331E]/15 text-[#22331E] hover:bg-[#FAF4E8]'
+          }`}
+          title={isDark ? 'Switch to Light Theme' : 'Switch to Dark Theme'}
+        >
+          <span className="material-symbols-outlined text-base leading-none">
+            {isDark ? 'light_mode' : 'dark_mode'}
+          </span>
+          <span className="text-[11px] font-serif font-bold uppercase tracking-wider">
+            {isDark ? 'Light' : 'Dark'}
+          </span>
+        </button>
+      )}
+
       <AnimatePresence mode="wait">
         {/* STEP 0: SPLASH SCREEN (SHILPSETU LOGO AT CENTER AS IN PICTURE) */}
         {currentStep === 0 && (

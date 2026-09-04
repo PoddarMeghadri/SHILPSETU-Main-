@@ -19,15 +19,14 @@ import { ProfileScreen } from './components/sections/ProfileScreen';
 import { ShilpiVoiceFAB } from './components/voice/ShilpiVoiceFAB';
 import { ShilpiVoiceModal } from './components/voice/ShilpiVoiceModal';
 import { sound } from './services/sound';
+import { useLanguage } from './context/LanguageContext';
 
 export function App() {
+  const { language, setLanguage } = useLanguage();
   const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState<boolean>(() => {
     return localStorage.getItem('shilpsetu_auth_done') === 'true';
   });
   const [currentScreen, setCurrentScreen] = useState<ScreenId>('home');
-  const [language, setLanguage] = useState<LanguageCode>(() => {
-    return (localStorage.getItem('shilpsetu_lang') as LanguageCode) || 'hi';
-  });
   const [isDark, setIsDark] = useState<boolean>(() => {
     return localStorage.getItem('shilpsetu_theme') === 'dark';
   });
@@ -153,7 +152,11 @@ export function App() {
     >
       {/* 4-Step Onboarding Flow if not completed */}
       {!hasCompletedOnboarding && (
-        <OnboardingFlow onComplete={handleOnboardingComplete} isDark={isDark} />
+        <OnboardingFlow
+          onComplete={handleOnboardingComplete}
+          isDark={isDark}
+          onToggleTheme={handleToggleTheme}
+        />
       )}
 
       {/* Main Mobile App Container Frame */}

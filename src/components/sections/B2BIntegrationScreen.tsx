@@ -13,17 +13,21 @@ interface B2BScreenProps {
 }
 
 export const B2BIntegrationScreen: React.FC<B2BScreenProps> = ({
-  language = 'hi',
   isDark = false,
 }) => {
-  const { t } = useTranslation(language);
+  const { t } = useTranslation();
   const [inquiries, setInquiries] = useState<BulkInquiry[]>(BULK_INQUIRIES);
   const [selectedInquiry, setSelectedInquiry] = useState<BulkInquiry | null>(null);
   const [showSuccess, setShowSuccess] = useState<boolean>(false);
-  const [successMessage, setSuccessMessage] = useState<{ title: string; subtitle: string }>({
-    title: t('order_accepted', 'Order Accepted!'),
-    subtitle: t('po_generated_sub', 'Official purchase order generated. Initial 40% escrow advance initiated.'),
-  });
+  const [acceptedBuyer, setAcceptedBuyer] = useState<string | null>(null);
+
+  const successTitle = acceptedBuyer
+    ? t('bulk_order_confirmed', 'Bulk Order Confirmed!')
+    : t('order_accepted', 'Order Accepted!');
+
+  const successSubtitle = acceptedBuyer
+    ? `${t('accepted_order_from', 'Accepted procurement order from')} ${acceptedBuyer}. ${t('gem_cert_gen', 'GeM compliance certificate generated.')}`
+    : t('po_generated_sub', 'Official purchase order generated. Initial 40% escrow advance initiated.');
 
   const handleAccept = (id: string, buyerName: string) => {
     sound.playSuccess();
@@ -31,10 +35,7 @@ export const B2BIntegrationScreen: React.FC<B2BScreenProps> = ({
       prev.map((inq) => (inq.id === id ? { ...inq, status: 'accepted' } : inq))
     );
     setSelectedInquiry(null);
-    setSuccessMessage({
-      title: t('bulk_order_confirmed', 'Bulk Order Confirmed!'),
-      subtitle: `${t('accepted_order_from', 'Accepted procurement order from')} ${buyerName}. ${t('gem_cert_gen', 'GeM compliance certificate generated.')}`,
-    });
+    setAcceptedBuyer(buyerName);
     setShowSuccess(true);
   };
 
@@ -173,7 +174,7 @@ export const B2BIntegrationScreen: React.FC<B2BScreenProps> = ({
                 </span>
               </div>
               <p className="text-[11px] opacity-70 font-sans">
-                HSN Code 6912.00 compliant with auto-generated tax invoices.
+                HSN 6912.00 • {t('hsn_compliant_desc', 'Compliant with auto-generated tax invoices.')}
               </p>
             </div>
           </div>
@@ -195,7 +196,7 @@ export const B2BIntegrationScreen: React.FC<B2BScreenProps> = ({
                 </span>
               </div>
               <p className="text-[11px] opacity-70 font-sans">
-                State Bank of India (Varanasi Branch) • {t('ready_for_advance', 'Ready for 40% advances.')}
+                {t('sbi_branch_escrow', 'State Bank of India (Varanasi Branch)')} • {t('ready_for_advance', 'Ready for 40% advances.')}
               </p>
             </div>
           </div>
@@ -256,7 +257,7 @@ export const B2BIntegrationScreen: React.FC<B2BScreenProps> = ({
                         : 'bg-[#E8B84B] text-[#1A1815]'
                     }`}
                   >
-                    {inq.status}
+                    {t(inq.status, inq.status)}
                   </span>
                 </div>
 
@@ -275,7 +276,7 @@ export const B2BIntegrationScreen: React.FC<B2BScreenProps> = ({
                     <div>
                       <p className="font-serif font-bold text-xs line-clamp-1">{inq.itemTitle}</p>
                       <p className="text-[11px] opacity-70 font-sans">
-                        Qty: <strong>{inq.quantity} units</strong> @ ₹{inq.targetPrice}/unit
+                        {t('qty', 'Qty')}: <strong>{inq.quantity} {t('units', 'units')}</strong> @ ₹{inq.targetPrice}/{t('per_unit', 'unit')}
                       </p>
                     </div>
                   </div>
@@ -367,7 +368,7 @@ export const B2BIntegrationScreen: React.FC<B2BScreenProps> = ({
                   <strong>{t('item_label', 'Item')}:</strong> {selectedInquiry.itemTitle}
                 </p>
                 <p>
-                  <strong>{t('quantity_label', 'Quantity')}:</strong> {selectedInquiry.quantity} Units
+                  <strong>{t('quantity_label', 'Quantity')}:</strong> {selectedInquiry.quantity} {t('units', 'Units')}
                 </p>
                 <p>
                   <strong>{t('total_escrow_value', 'Total Escrow Value')}:</strong> ₹
@@ -398,11 +399,7 @@ export const B2BIntegrationScreen: React.FC<B2BScreenProps> = ({
               <div className="flex gap-2 pt-2">
                 <button
                   onClick={() => setSelectedInquiry(null)}
-                  className={`flex-1 border py-3 rounded-2xl text-xs font-semibold ${
-                    isDark
-                      ? 'bg-[#121411] border-[#2D3A2B] text-white'
-                      : 'bg-white border-[#22331E]/15 text-[#22331E]'
-                  }`}
+                  className="flex-1 border border-red-500/30 bg-red-500/10 hover:bg-red-500/20 text-red-600 dark:text-red-400 py-3 rounded-2xl text-xs font-serif font-bold transition-colors active:scale-95"
                 >
                   {t('cancel', 'Cancel')}
                 </button>
@@ -422,9 +419,9 @@ export const B2BIntegrationScreen: React.FC<B2BScreenProps> = ({
       <SuccessModal
         isOpen={showSuccess}
         onClose={() => setShowSuccess(false)}
-        title={successMessage.title}
-        subtitle={successMessage.subtitle}
-        actionLabel={t('view_active_orders', 'View Active Orders')}
+        title={successTitle}
+        subtitle={successSubtitle}
+        actionText={t('view_active_orders', 'View Active Orders')}
         onAction={() => setShowSuccess(false)}
         isDark={isDark}
       />

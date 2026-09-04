@@ -16,10 +16,9 @@ type Period = 'today' | 'week' | 'month';
 
 export const BusinessDashboardScreen: React.FC<BusinessDashboardProps> = ({
   onNavigate,
-  language = 'hi',
   isDark = false,
 }) => {
-  const { t } = useTranslation(language);
+  const { t } = useTranslation();
   const [period, setPeriod] = useState<Period>('week');
   const [orders, setOrders] = useState<OrderItem[]>(PENDING_ORDERS);
   const [showSuccess, setShowSuccess] = useState<boolean>(false);

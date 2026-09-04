@@ -33,10 +33,9 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({
   currentScreen,
   onNavigate,
   isDark = false,
-  language = 'en',
   artisanAvatar,
 }) => {
-  const { t } = useTranslation(language);
+  const { t } = useTranslation();
 
   // Map secondary screens to primary tab highlights if needed
   const activeTabId = (() => {

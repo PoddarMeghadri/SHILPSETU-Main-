@@ -169,15 +169,59 @@ class SoundService {
     }
   }
 
-  private triggerHaptic(pattern: number | number[]) {
+  // Public Vibration API triggers for tactile feedback
+  vibrate(pattern: number | number[] = 15) {
+    this.triggerHaptic(pattern);
+  }
+
+  vibrateTap() {
+    this.triggerHaptic(14);
+  }
+
+  vibrateSelection() {
+    this.triggerHaptic(20);
+  }
+
+  vibrateSuccess() {
+    this.triggerHaptic([25, 40, 35]);
+  }
+
+  vibrateWarning() {
+    this.triggerHaptic([40, 50, 40]);
+  }
+
+  triggerHaptic(pattern: number | number[]) {
     if (typeof window !== 'undefined' && 'vibrate' in navigator) {
       try {
         navigator.vibrate(pattern);
       } catch {
-        // Ignored
+        // Vibration blocked or unsupported
       }
     }
   }
 }
 
 export const sound = new SoundService();
+
+// Global touch/click haptic feedback listener
+let isHapticsInitialized = false;
+export function initGlobalHaptics() {
+  if (typeof window === 'undefined' || isHapticsInitialized) return;
+  isHapticsInitialized = true;
+
+  const handleInteraction = (e: Event) => {
+    const target = e.target as HTMLElement | null;
+    if (!target) return;
+
+    // Check if clicked element or its parent is interactive
+    const interactive = target.closest(
+      'button, a, [role="button"], input[type="button"], input[type="submit"], input[type="radio"], input[type="checkbox"], select, [data-haptic]'
+    );
+
+    if (interactive) {
+      sound.vibrate(12);
+    }
+  };
+
+  window.addEventListener('pointerdown', handleInteraction, { passive: true });
+}

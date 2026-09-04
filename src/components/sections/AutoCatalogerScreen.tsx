@@ -188,10 +188,9 @@ const SAMPLE_TRANSCRIPTS: Partial<Record<LanguageCode, SampleVoicePrompt>> = {
 
 export const AutoCatalogerScreen: React.FC<AutoCatalogerProps> = ({
   onAddProduct,
-  language = 'hi',
   isDark = false,
 }) => {
-  const { t } = useTranslation(language);
+  const { t, language } = useTranslation();
   const [selectedLang, setSelectedLang] = useState<LanguageCode>(language);
   const [isRecording, setIsRecording] = useState<boolean>(false);
   const [isTranslating, setIsTranslating] = useState<boolean>(false);
