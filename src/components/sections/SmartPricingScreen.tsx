@@ -362,7 +362,11 @@ export const SmartPricingScreen: React.FC<SmartPricingProps> = ({
         subtitle={`${t('price_applied_sub', 'Your craft is now listed at')} ₹${displayPrice.toLocaleString(
           'en-IN'
         )}, ${t('fair_margin_secured', 'securing a fair margin for your labor.')}`}
-        actionLabel={t('view_b2b', 'View B2B Gateway')}
+        actionLabel={t('continue_to_b2b', 'Continue to B2B and GeM')}
+        onAction={() => {
+          setShowSuccess(false);
+          onNavigate('b2b');
+        }}
         isDark={isDark}
       />
     </div>

@@ -9,7 +9,10 @@ interface SuccessModalProps {
   title: string;
   subtitle?: string;
   actionText?: string;
+  actionLabel?: string;
+  onAction?: () => void;
   badge?: string;
+  isDark?: boolean;
 }
 
 export const SuccessModal: React.FC<SuccessModalProps> = ({
@@ -17,9 +20,13 @@ export const SuccessModal: React.FC<SuccessModalProps> = ({
   onClose,
   title,
   subtitle,
-  actionText = 'Continue',
+  actionText,
+  actionLabel,
+  onAction,
   badge = 'Success',
+  isDark = false,
 }) => {
+  const displayActionText = actionLabel || actionText || 'Continue';
   useEffect(() => {
     if (isOpen) {
       sound.playSuccess();
@@ -37,6 +44,15 @@ export const SuccessModal: React.FC<SuccessModalProps> = ({
       }
     }
   }, [isOpen]);
+
+  const handleAction = () => {
+    sound.playTap();
+    if (onAction) {
+      onAction();
+    } else {
+      onClose();
+    }
+  };
 
   return (
     <AnimatePresence>
@@ -57,7 +73,11 @@ export const SuccessModal: React.FC<SuccessModalProps> = ({
             animate={{ scale: 1, opacity: 1, y: 0 }}
             exit={{ scale: 0.9, opacity: 0, y: 20 }}
             transition={{ type: 'spring', damping: 22, stiffness: 280 }}
-            className="relative w-full max-w-sm bg-[#F4ECDE] rounded-3xl p-6 shadow-2xl border border-[#22331E]/15 text-center overflow-hidden z-10"
+            className={`relative w-full max-w-sm rounded-3xl p-6 shadow-2xl border text-center overflow-hidden z-10 ${
+              isDark
+                ? 'bg-[#1C221A] border-[#2D3A2B] text-[#F4ECDE]'
+                : 'bg-[#F4ECDE] border-[#22331E]/15 text-[#1A1815]'
+            }`}
           >
             {/* Background Decorative Arch Motif */}
             <div className="absolute -top-12 -right-12 w-32 h-32 rounded-full bg-[#E8B84B]/15 blur-xl pointer-events-none" />
@@ -93,26 +113,23 @@ export const SuccessModal: React.FC<SuccessModalProps> = ({
             )}
 
             {/* Title */}
-            <h3 className="font-serif text-2xl font-bold text-[#1A1815] mb-2 leading-tight">
+            <h3 className="font-serif text-2xl font-bold mb-2 leading-tight">
               {title}
             </h3>
 
             {/* Subtitle */}
             {subtitle && (
-              <p className="text-sm text-[#22331E]/75 mb-6 leading-relaxed">
+              <p className={`text-sm mb-6 leading-relaxed ${isDark ? 'text-[#F4ECDE]/75' : 'text-[#22331E]/75'}`}>
                 {subtitle}
               </p>
             )}
 
             {/* Action Button */}
             <button
-              onClick={() => {
-                sound.playTap();
-                onClose();
-              }}
-              className="w-full bg-[#B5451B] hover:bg-[#9C3A14] text-white font-serif font-bold py-3.5 px-6 rounded-2xl shadow-md transition-transform active:scale-95 duration-150 flex items-center justify-center gap-2"
+              onClick={handleAction}
+              className="w-full bg-[#B5451B] hover:bg-[#9C3A14] text-white font-serif font-bold py-3.5 px-6 rounded-2xl shadow-md transition-transform active:scale-95 duration-150 flex items-center justify-center gap-2 cursor-pointer"
             >
-              <span>{actionText}</span>
+              <span>{displayActionText}</span>
               <span className="material-symbols-outlined text-lg">arrow_forward</span>
             </button>
           </motion.div>

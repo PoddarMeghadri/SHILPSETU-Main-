@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { ArtisanProfile, ScreenId, LanguageCode } from '../../types';
 import { sound } from '../../services/sound';
@@ -63,27 +63,127 @@ export const HeritageStoryScreen: React.FC<HeritageStoryProps> = ({
   onNavigate,
   isDark = false,
 }) => {
-  const { t } = useTranslation();
+  const { t, language: currentLanguage } = useTranslation();
   const [selectedAngle, setSelectedAngle] = useState<StoryAngle>('lineage');
   const [isRecording, setIsRecording] = useState<boolean>(false);
   const [isGenerating, setIsGenerating] = useState<boolean>(false);
   const [activeStory, setActiveStory] = useState<StoryPrompt>(STORY_PROMPTS.lineage);
+  const [spokenTranscript, setSpokenTranscript] = useState<string>('');
   const [showSuccess, setShowSuccess] = useState<boolean>(false);
 
-  const handleStartVoice = () => {
-    sound.playMicStart();
-    setIsRecording(true);
+  const recognitionRef = useRef<any>(null);
+  const timerRef = useRef<any>(null);
+  const transcriptRef = useRef<string>('');
+
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+      if (recognitionRef.current) {
+        try {
+          recognitionRef.current.stop();
+        } catch {
+          // ignore
+        }
+      }
+    };
+  }, []);
+
+  const stopVoiceAndGenerate = () => {
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
+      timerRef.current = null;
+    }
+
+    if (recognitionRef.current) {
+      try {
+        recognitionRef.current.stop();
+      } catch {
+        // ignore
+      }
+    }
+
+    setIsRecording(false);
+    setIsGenerating(true);
 
     setTimeout(() => {
-      setIsRecording(false);
-      setIsGenerating(true);
+      setIsGenerating(false);
+      const current = STORY_PROMPTS[selectedAngle];
+      const captured = transcriptRef.current.trim();
+      if (captured) {
+        setActiveStory({
+          ...current,
+          quote: `"${captured}"`,
+        });
+      } else {
+        setActiveStory(current);
+      }
+      sound.playSuccess();
+    }, 1200);
+  };
 
-      setTimeout(() => {
-        setIsGenerating(false);
-        setActiveStory(STORY_PROMPTS[selectedAngle]);
-        sound.playSuccess();
-      }, 1500);
-    }, 2500);
+  const handleStartVoice = () => {
+    if (isRecording) {
+      sound.playTap();
+      stopVoiceAndGenerate();
+      return;
+    }
+
+    sound.playMicStart();
+    setIsRecording(true);
+    setSpokenTranscript('');
+    transcriptRef.current = '';
+
+    const SpeechRecognition =
+      (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+
+    if (SpeechRecognition) {
+      try {
+        const recognition = new SpeechRecognition();
+        recognitionRef.current = recognition;
+        recognition.continuous = true;
+        recognition.interimResults = true;
+
+        const langMap: Record<string, string> = {
+          hi: 'hi-IN',
+          bn: 'bn-IN',
+          ta: 'ta-IN',
+          te: 'te-IN',
+          mr: 'mr-IN',
+          gu: 'gu-IN',
+          kn: 'kn-IN',
+          ml: 'ml-IN',
+          pa: 'pa-IN',
+          ur: 'ur-IN',
+          en: 'en-IN',
+        };
+        recognition.lang = langMap[currentLanguage] || 'en-IN';
+
+        recognition.onresult = (event: any) => {
+          let currentText = '';
+          for (let i = 0; i < event.results.length; i++) {
+            currentText += event.results[i][0].transcript + ' ';
+          }
+          const cleaned = currentText.trim();
+          if (cleaned) {
+            transcriptRef.current = cleaned;
+            setSpokenTranscript(cleaned);
+          }
+        };
+
+        recognition.onerror = () => {
+          // Graceful continue
+        };
+
+        recognition.start();
+      } catch (err) {
+        console.warn('Speech recognition start error:', err);
+      }
+    }
+
+    // Safety timeout: 30 seconds
+    timerRef.current = setTimeout(() => {
+      stopVoiceAndGenerate();
+    }, 30000);
   };
 
   const handleSelectAngle = (angle: StoryAngle) => {
@@ -175,7 +275,7 @@ export const HeritageStoryScreen: React.FC<HeritageStoryProps> = ({
         <div className="relative z-10 space-y-3">
           <p className="text-xs uppercase tracking-widest text-[#E8B84B] font-bold">
             {isRecording
-              ? t('listening_narrative', 'Listening to Your Heritage Narrative...')
+              ? t('listening_narrative_tap_stop', 'Listening... Tap again when finished speaking')
               : isGenerating
               ? t('ai_crafting_bio', 'AI Crafting Your Editorial Biography...')
               : t('tap_mic_speak_craft', 'Tap Mic to Speak About Your Craft')}
@@ -184,27 +284,38 @@ export const HeritageStoryScreen: React.FC<HeritageStoryProps> = ({
           {/* Pulsing Mic Button */}
           <div className="relative mx-auto w-20 h-20 flex items-center justify-center">
             {isRecording && (
-              <div className="absolute inset-0 rounded-full border-2 border-[#E8B84B] animate-ping opacity-50" />
+              <>
+                <div className="absolute inset-0 rounded-full border-2 border-[#E8B84B] animate-ping opacity-50" />
+                <div className="absolute -inset-2 rounded-full border border-[#B5451B] animate-pulse opacity-40" />
+              </>
             )}
 
             <button
               onClick={handleStartVoice}
-              disabled={isRecording || isGenerating}
+              disabled={isGenerating}
               className={`w-16 h-16 rounded-full flex items-center justify-center transition-all shadow-2xl ${
                 isRecording
-                  ? 'bg-[#B5451B] text-white scale-105'
+                  ? 'bg-[#B5451B] text-white scale-110 ring-4 ring-[#E8B84B]/60 animate-pulse'
                   : 'bg-[#E8B84B] hover:bg-[#E8B84B]/90 text-[#1A1815] active:scale-90 font-bold'
               }`}
+              title={isRecording ? 'Tap to finish speaking' : 'Tap to speak'}
             >
               <span className="material-symbols-outlined text-3xl">
-                {isRecording ? 'graphic_eq' : 'mic'}
+                {isRecording ? 'stop' : 'mic'}
               </span>
             </button>
           </div>
 
-          <div className="p-3 bg-black/30 rounded-2xl border border-white/10 text-xs text-white/80 italic font-serif">
-            Prompt: "Who taught you your craft and how does it connect to your village?"
-          </div>
+          {/* Live transcript or prompt preview */}
+          {spokenTranscript ? (
+            <div className="p-3 bg-black/40 rounded-2xl border border-[#E8B84B]/30 text-xs text-[#E8B84B] italic font-serif">
+              "{spokenTranscript}"
+            </div>
+          ) : (
+            <div className="p-3 bg-black/30 rounded-2xl border border-white/10 text-xs text-white/80 italic font-serif">
+              Prompt: "Who taught you your craft and how does it connect to your village?"
+            </div>
+          )}
         </div>
       </div>
 

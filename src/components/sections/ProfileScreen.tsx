@@ -549,39 +549,6 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
             </div>
           )}
 
-          {/* Setting 2: Export Portfolio & Heritage as Downloadable PDF */}
-          <button
-            onClick={() => {
-              sound.playTap();
-              setIsExportPortfolioOpen(true);
-            }}
-            className={`w-full p-3.5 rounded-2xl border flex items-center justify-between text-left active:scale-98 transition-all ${
-              isDark
-                ? 'bg-[#121411] border-[#B5451B]/40 hover:bg-[#222720]'
-                : 'bg-white border-[#B5451B]/30 hover:bg-[#FAF4E8]'
-            }`}
-          >
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#B5451B] to-[#7F2A0B] text-white flex items-center justify-center shadow-xs">
-                <span className="material-symbols-outlined text-lg">picture_as_pdf</span>
-              </div>
-              <div>
-                <div className="flex items-center gap-1.5">
-                  <p className="font-serif font-bold text-xs text-[#B5451B]">
-                    {t('export_portfolio_pdf', 'Export Portfolio & Heritage (PDF)')}
-                  </p>
-                  <span className="bg-[#B5451B]/15 text-[#B5451B] text-[8px] font-bold px-1.5 py-0.2 rounded-full uppercase">
-                    New
-                  </span>
-                </div>
-                <p className="text-[10px] opacity-70">
-                  {t('export_portfolio_desc', 'Download official verifiable portfolio for exhibitions, grants & buyers')}
-                </p>
-              </div>
-            </div>
-            <span className="material-symbols-outlined text-sm text-[#B5451B]">download</span>
-          </button>
-
           {/* Setting 3: Edit Heritage Story */}
           <button
             onClick={() => {

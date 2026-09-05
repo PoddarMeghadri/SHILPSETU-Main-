@@ -160,7 +160,6 @@ export function App() {
         <OnboardingFlow
           onComplete={handleOnboardingComplete}
           isDark={isDark}
-          onToggleTheme={handleToggleTheme}
         />
       )}
 

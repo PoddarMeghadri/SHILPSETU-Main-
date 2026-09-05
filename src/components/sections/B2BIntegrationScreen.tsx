@@ -217,7 +217,7 @@ export const B2BIntegrationScreen: React.FC<B2BScreenProps> = ({
             {t('direct_bulk_inquiries', 'Direct Bulk & Tender Inquiries')}
           </h4>
           <span className="text-xs text-[#B5451B] font-sans font-bold">
-            3 {t('active_tag', 'Active')}
+            {inquiries.filter((inq) => inq.status === 'pending').length} {t('active_tag', 'Active')}
           </span>
         </div>
 
@@ -304,7 +304,7 @@ export const B2BIntegrationScreen: React.FC<B2BScreenProps> = ({
                 </p>
 
                 {/* Interactive Action Buttons */}
-                {isPending ? (
+                {isPending && (
                   <div className="flex gap-2 pt-1">
                     <button
                       onClick={() => handleDecline(inq.id)}
@@ -326,23 +326,6 @@ export const B2BIntegrationScreen: React.FC<B2BScreenProps> = ({
                     >
                       <span className="material-symbols-outlined text-sm">handshake</span>
                       <span>{t('review_accept', 'Review & Accept')}</span>
-                    </button>
-                  </div>
-                ) : (
-                  <div className="pt-1 flex gap-2">
-                    <button
-                      onClick={() => {
-                        sound.playTap();
-                        setQrLabelItem(inq);
-                      }}
-                      className={`w-full py-2 px-3 rounded-2xl border text-xs font-bold flex items-center justify-center gap-1.5 transition-all active:scale-95 ${
-                        isDark
-                          ? 'bg-[#1C221A] border-[#D4A759]/40 text-[#F4ECDE] hover:bg-[#252E22]'
-                          : 'bg-white border-[#D4A759]/50 text-[#1A1815] hover:bg-[#FAF4E8]'
-                      }`}
-                    >
-                      <span className="material-symbols-outlined text-base text-[#B5451B]">qr_code_scanner</span>
-                      <span>{t('generate_qr_label', 'Print Physical QR Label')}</span>
                     </button>
                   </div>
                 )}

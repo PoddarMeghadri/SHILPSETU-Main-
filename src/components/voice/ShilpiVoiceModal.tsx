@@ -39,6 +39,8 @@ export const ShilpiVoiceModal: React.FC<ShilpiVoiceModalProps> = ({
   const [feedbackMessage, setFeedbackMessage] = useState<string>('');
   const [isSpeakingResponse, setIsSpeakingResponse] = useState<boolean>(false);
   const recognitionRef = useRef<any>(null);
+  const transcriptRef = useRef<string>('');
+  const fallbackIntervalRef = useRef<any>(null);
 
   // Command Suggestions in Indian context
   const suggestions: CommandSuggestion[] = [
@@ -189,10 +191,37 @@ export const ShilpiVoiceModal: React.FC<ShilpiVoiceModalProps> = ({
     }
   };
 
+  const stopListeningAndProcess = () => {
+    if (fallbackIntervalRef.current) {
+      clearInterval(fallbackIntervalRef.current);
+      fallbackIntervalRef.current = null;
+    }
+
+    if (recognitionRef.current) {
+      try {
+        recognitionRef.current.stop();
+      } catch {
+        // ignore
+      }
+    }
+
+    setIsListening(false);
+    const captured = transcriptRef.current.trim();
+    if (captured) {
+      processVoiceQuery(captured);
+    }
+  };
+
   const startListening = () => {
+    if (fallbackIntervalRef.current) {
+      clearInterval(fallbackIntervalRef.current);
+      fallbackIntervalRef.current = null;
+    }
+
     sound.playVoiceStart();
     setIsListening(true);
     setTranscript('');
+    transcriptRef.current = '';
     setFeedbackMessage('Listening...');
 
     const SpeechRecognition =
@@ -202,7 +231,7 @@ export const ShilpiVoiceModal: React.FC<ShilpiVoiceModalProps> = ({
       try {
         const recognition = new SpeechRecognition();
         recognitionRef.current = recognition;
-        recognition.continuous = false;
+        recognition.continuous = true;
         recognition.interimResults = true;
 
         const langMap: Partial<Record<LanguageCode, string>> = {
@@ -223,19 +252,26 @@ export const ShilpiVoiceModal: React.FC<ShilpiVoiceModalProps> = ({
         recognition.lang = langMap[currentLanguage] || 'en-IN';
 
         recognition.onresult = (event: any) => {
-          const current = event.resultIndex;
-          const text = event.results[current][0].transcript;
-          setTranscript(text);
+          let currentText = '';
+          for (let i = 0; i < event.results.length; i++) {
+            currentText += event.results[i][0].transcript + ' ';
+          }
+          const cleaned = currentText.trim();
+          if (cleaned) {
+            transcriptRef.current = cleaned;
+            setTranscript(cleaned);
+          }
         };
 
         recognition.onerror = () => {
-          setIsListening(false);
+          // Keep listening or fallback gracefully
         };
 
         recognition.onend = () => {
           setIsListening(false);
-          if (transcript) {
-            processVoiceQuery(transcript);
+          const captured = transcriptRef.current.trim();
+          if (captured) {
+            processVoiceQuery(captured);
           }
         };
 
@@ -246,7 +282,7 @@ export const ShilpiVoiceModal: React.FC<ShilpiVoiceModalProps> = ({
       }
     }
 
-    // Fallback simulation if browser mic permissions or Web Speech is blocked in iframe
+    // Fallback simulation only if browser speech recognition is completely unsupported
     const samplePhrases = [
       currentLanguage === 'hi' ? 'एआई स्टूडियो खोलो' : 'Open AI Studio',
       currentLanguage === 'hi' ? 'आज का हिसाब दिखाओ' : "Show today's sales",
@@ -257,13 +293,17 @@ export const ShilpiVoiceModal: React.FC<ShilpiVoiceModalProps> = ({
 
     let currentChars = '';
     let index = 0;
-    const interval = setInterval(() => {
+    fallbackIntervalRef.current = setInterval(() => {
       if (index < picked.length) {
         currentChars += picked[index];
+        transcriptRef.current = currentChars;
         setTranscript(currentChars);
         index++;
       } else {
-        clearInterval(interval);
+        if (fallbackIntervalRef.current) {
+          clearInterval(fallbackIntervalRef.current);
+          fallbackIntervalRef.current = null;
+        }
         setTimeout(() => {
           setIsListening(false);
           processVoiceQuery(picked);
@@ -276,6 +316,10 @@ export const ShilpiVoiceModal: React.FC<ShilpiVoiceModalProps> = ({
     if (isOpen) {
       startListening();
     } else {
+      if (fallbackIntervalRef.current) {
+        clearInterval(fallbackIntervalRef.current);
+        fallbackIntervalRef.current = null;
+      }
       if (recognitionRef.current) {
         try {
           recognitionRef.current.stop();
@@ -283,6 +327,7 @@ export const ShilpiVoiceModal: React.FC<ShilpiVoiceModalProps> = ({
       }
       setIsListening(false);
       setTranscript('');
+      transcriptRef.current = '';
       setFeedbackMessage('');
     }
   }, [isOpen]);
@@ -350,8 +395,7 @@ export const ShilpiVoiceModal: React.FC<ShilpiVoiceModalProps> = ({
               <button
                 onClick={() => {
                   if (isListening) {
-                    setIsListening(false);
-                    if (recognitionRef.current) recognitionRef.current.stop();
+                    stopListeningAndProcess();
                   } else {
                     startListening();
                   }
@@ -361,6 +405,7 @@ export const ShilpiVoiceModal: React.FC<ShilpiVoiceModalProps> = ({
                     ? 'bg-[#B5451B] text-white scale-105'
                     : 'bg-[#22331E] text-[#E8B84B] hover:scale-105 active:scale-95'
                 }`}
+                title={isListening ? 'Tap to process command' : 'Tap to start listening'}
               >
                 <span className="material-symbols-outlined text-4xl">
                   {isListening ? 'graphic_eq' : 'mic'}

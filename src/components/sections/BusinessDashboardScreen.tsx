@@ -276,15 +276,6 @@ export const BusinessDashboardScreen: React.FC<BusinessDashboardProps> = ({
             Red Terracotta Urli {t('has_left_stock', 'has only 2 units left in workshop stock.')}
           </p>
         </div>
-        <button
-          onClick={() => {
-            sound.playTap();
-            onNavigate('studio');
-          }}
-          className="text-xs text-[#B5451B] font-bold underline shrink-0"
-        >
-          {t('add_stock', 'Add Stock')}
-        </button>
       </div>
 
       {/* Pending Customer Orders */}

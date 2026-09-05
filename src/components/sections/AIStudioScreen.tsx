@@ -25,9 +25,21 @@ export const AIStudioScreen: React.FC<AIStudioScreenProps> = ({
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const [showGrid, setShowGrid] = useState<boolean>(true);
   const [activeLighting, setActiveLighting] = useState<string>('soft_cinematic');
-  const [aspectRatio, setAspectRatio] = useState<'1:1' | '4:5' | '16:9'>('1:1');
+  const [aspectRatio, setAspectRatio] = useState<'1:1' | '4:3' | '16:9'>('1:1');
   const [showSuccess, setShowSuccess] = useState<boolean>(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const getAspectRatioClass = () => {
+    switch (aspectRatio) {
+      case '4:3':
+        return 'aspect-[4/3]';
+      case '16:9':
+        return 'aspect-video';
+      case '1:1':
+      default:
+        return 'aspect-square';
+    }
+  };
 
   useEffect(() => {
     if (!products.some((p) => p.id === selectedProduct?.id) && products.length > 0) {
@@ -136,7 +148,7 @@ export const AIStudioScreen: React.FC<AIStudioScreenProps> = ({
       {/* TAB 1: AI VIEWFINDER / CAMERA MODE */}
       {activeTab === 'camera' && !isProcessing && (
         <div className="space-y-4">
-          <div className="relative w-full aspect-square bg-[#1A1815] rounded-3xl overflow-hidden border-2 border-[#D9A441]/40 shadow-2xl flex flex-col justify-between p-4">
+          <div className={`relative w-full ${getAspectRatioClass()} bg-[#1A1815] rounded-3xl overflow-hidden border-2 border-[#D9A441]/40 shadow-2xl flex flex-col justify-between p-3.5 transition-all duration-300 ease-in-out`}>
             <img
               src="https://images.unsplash.com/photo-1578749556568-bc2c40e68b61?w=800&auto=format&fit=crop&q=80"
               alt="Live Viewfinder"
@@ -150,15 +162,15 @@ export const AIStudioScreen: React.FC<AIStudioScreenProps> = ({
             {/* Top Camera Controls */}
             <div className="relative z-10 flex items-center justify-between">
               <div className="flex bg-black/60 backdrop-blur-md rounded-full p-1 border border-white/20">
-                {(['1:1', '4:5', '16:9'] as const).map((ratio) => (
+                {(['1:1', '4:3', '16:9'] as const).map((ratio) => (
                   <button
                     key={ratio}
                     onClick={() => {
                       sound.playTap();
                       setAspectRatio(ratio);
                     }}
-                    className={`px-2.5 py-0.5 text-[10px] font-semibold rounded-full ${
-                      aspectRatio === ratio ? 'bg-[#E8B84B] text-[#1A1815]' : 'text-white/80'
+                    className={`px-2.5 py-0.5 text-[10px] font-semibold rounded-full transition-colors ${
+                      aspectRatio === ratio ? 'bg-[#E8B84B] text-[#1A1815] shadow-xs' : 'text-white/80 hover:text-white'
                     }`}
                   >
                     {ratio}
@@ -172,7 +184,7 @@ export const AIStudioScreen: React.FC<AIStudioScreenProps> = ({
                     sound.playTap();
                     setShowGrid(!showGrid);
                   }}
-                  className={`w-8 h-8 rounded-full flex items-center justify-center backdrop-blur-md border ${
+                  className={`w-8 h-8 rounded-full flex items-center justify-center backdrop-blur-md border transition-colors ${
                     showGrid
                       ? 'bg-[#E8B84B] text-[#1A1815] border-[#E8B84B]'
                       : 'bg-black/60 text-white border-white/20'
@@ -182,25 +194,9 @@ export const AIStudioScreen: React.FC<AIStudioScreenProps> = ({
                   <span className="material-symbols-outlined text-base">grid_4x4</span>
                 </button>
 
-                {/* Upload custom craft photo */}
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  onChange={handleFileUpload}
-                  className="hidden"
-                />
-                <button
-                  onClick={() => fileInputRef.current?.click()}
-                  className="w-8 h-8 rounded-full bg-black/60 text-white flex items-center justify-center backdrop-blur-md border border-white/20 hover:border-[#E8B84B]"
-                  title="Upload Craft Photo"
-                >
-                  <span className="material-symbols-outlined text-base">upload</span>
-                </button>
-
                 <button
                   onClick={() => sound.playTap()}
-                  className="w-8 h-8 rounded-full bg-black/60 text-white flex items-center justify-center backdrop-blur-md border border-white/20"
+                  className="w-8 h-8 rounded-full bg-black/60 text-white flex items-center justify-center backdrop-blur-md border border-white/20 hover:bg-black/80"
                   title="Toggle Flash"
                 >
                   <span className="material-symbols-outlined text-base">flash_on</span>
@@ -209,50 +205,61 @@ export const AIStudioScreen: React.FC<AIStudioScreenProps> = ({
             </div>
 
             {/* Center Focus Box Indicator */}
-            <div className="relative z-10 mx-auto w-28 h-28 border-2 border-dashed border-[#E8B84B] rounded-2xl flex flex-col items-center justify-center pointer-events-none animate-pulse">
-              <span className="text-[9px] uppercase tracking-widest text-[#E8B84B] font-bold bg-black/70 px-2 py-0.5 rounded">
+            <div
+              className={`relative z-10 mx-auto border-2 border-dashed border-[#E8B84B] rounded-2xl flex flex-col items-center justify-center pointer-events-none animate-pulse transition-all duration-300 ${
+                aspectRatio === '16:9'
+                  ? 'w-24 h-16 my-auto'
+                  : aspectRatio === '4:3'
+                  ? 'w-28 h-22 my-auto'
+                  : 'w-28 h-28 my-auto'
+              }`}
+            >
+              <span className="text-[9px] uppercase tracking-widest text-[#E8B84B] font-bold bg-black/70 px-2 py-0.5 rounded whitespace-nowrap">
                 {t('focus_locked', 'Sharp Focus Locked')}
               </span>
-              <span className="text-[8px] text-white/80 mt-1">
+              <span className="text-[8px] text-white/80 mt-1 whitespace-nowrap">
                 {t('geometry_preserved', 'Exact Geometry Preserved')}
               </span>
             </div>
 
             {/* Bottom Lighting Presets Bar */}
-            <div className="relative z-10 flex justify-center gap-1.5 overflow-x-auto py-1">
-              {[
-                { id: 'soft_cinematic', label: t('lighting_soft_cinematic', 'Soft Cinematic'), icon: 'wb_incandescent' },
-                { id: 'clean_neutral', label: t('lighting_direct_sunlight', 'Clean Neutral'), icon: 'wb_sunny' },
-                { id: 'texture_macro', label: t('lighting_heritage_museum', 'High Detail Macro'), icon: 'texture' },
-                { id: 'photorealistic', label: t('lighting_boutique_gallery', 'Editorial Polish'), icon: 'auto_awesome' },
-              ].map((light) => (
-                <button
-                  key={light.id}
-                  onClick={() => {
-                    sound.playTap();
-                    setActiveLighting(light.id);
-                  }}
-                  className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-sans font-medium backdrop-blur-md transition-all shrink-0 ${
-                    activeLighting === light.id
-                      ? 'bg-[#B5451B] text-white border border-[#E8B84B]'
-                      : 'bg-black/60 text-white/80 border border-white/20'
-                  }`}
-                >
-                  <span className="material-symbols-outlined text-xs">{light.icon}</span>
-                  <span>{light.label}</span>
-                </button>
-              ))}
+            <div className="relative z-10 w-full overflow-x-auto no-scrollbar py-1">
+              <div className="flex items-center justify-start gap-1.5 px-1 min-w-max">
+                {[
+                  { id: 'soft_cinematic', label: t('lighting_soft_cinematic', 'Soft Cinematic'), icon: 'wb_incandescent' },
+                  { id: 'clean_neutral', label: t('lighting_direct_sunlight', 'Clean Neutral'), icon: 'wb_sunny' },
+                  { id: 'texture_macro', label: t('lighting_heritage_museum', 'High Detail Macro'), icon: 'texture' },
+                  { id: 'photorealistic', label: t('lighting_boutique_gallery', 'Editorial Polish'), icon: 'auto_awesome' },
+                ].map((light) => (
+                  <button
+                    key={light.id}
+                    onClick={() => {
+                      sound.playTap();
+                      setActiveLighting(light.id);
+                    }}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-sans font-medium backdrop-blur-md transition-all shrink-0 whitespace-nowrap ${
+                      activeLighting === light.id
+                        ? 'bg-[#B5451B] text-white border border-[#E8B84B] shadow-sm'
+                        : 'bg-black/70 text-white/90 border border-white/25 hover:border-white/50'
+                    }`}
+                  >
+                    <span className="material-symbols-outlined text-sm">{light.icon}</span>
+                    <span>{light.label}</span>
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
 
-          {/* Shutter & Actions Row */}
+          {/* Shutter & Actions Row with Upload Button on the Right */}
           <div className="flex items-center justify-around pt-2">
+            {/* Left: Studio Gallery Thumbnail */}
             <button
               onClick={() => {
                 sound.playTap();
                 setActiveTab('gallery');
               }}
-              className="w-12 h-12 rounded-2xl overflow-hidden border-2 border-[#22331E]/20 shadow-xs"
+              className="w-12 h-12 rounded-2xl overflow-hidden border-2 border-[#22331E]/20 shadow-xs active:scale-95 transition-transform"
               title={t('studio_gallery', 'Studio Gallery')}
             >
               <img
@@ -262,10 +269,11 @@ export const AIStudioScreen: React.FC<AIStudioScreenProps> = ({
               />
             </button>
 
-            {/* Master Capture Button */}
+            {/* Center: Master Capture Button */}
             <button
               onClick={handleCapture}
-              className="w-20 h-20 rounded-full bg-[#B5451B] border-4 border-[#F4ECDE] shadow-xl flex items-center justify-center text-white active:scale-90 transition-transform group"
+              className="w-20 h-20 rounded-full bg-[#B5451B] border-4 border-[#F4ECDE] shadow-xl flex items-center justify-center text-white active:scale-90 transition-transform group cursor-pointer"
+              title={t('capture_photo', 'Capture Photo')}
             >
               <div className="w-14 h-14 rounded-full border-2 border-[#E8B84B] flex items-center justify-center bg-[#9E3913] group-hover:bg-[#B5451B] transition-colors">
                 <span className="material-symbols-outlined text-2xl text-[#E8B84B]">
@@ -274,29 +282,31 @@ export const AIStudioScreen: React.FC<AIStudioScreenProps> = ({
               </div>
             </button>
 
+            {/* Right: Upload Button next to Shutter Button */}
             <button
-              onClick={() => fileInputRef.current?.click()}
-              className={`w-12 h-12 rounded-2xl border flex items-center justify-center ${
+              onClick={() => {
+                sound.playTap();
+                fileInputRef.current?.click();
+              }}
+              className={`w-12 h-12 rounded-2xl border flex items-center justify-center transition-all active:scale-95 shadow-xs cursor-pointer ${
                 isDark
-                  ? 'bg-[#1C221A] border-[#2D3A2B] text-[#F4ECDE]'
-                  : 'bg-[#EFE4CF] border-[#22331E]/10 text-[#22331E]'
+                  ? 'bg-[#1C221A] border-[#2D3A2B] text-[#E8B84B] hover:border-[#E8B84B]'
+                  : 'bg-[#EFE4CF] border-[#22331E]/15 text-[#B5451B] hover:border-[#B5451B]'
               }`}
               title={t('upload_craft_photo', 'Upload Craft Photo')}
             >
-              <span className="material-symbols-outlined text-2xl">upload_file</span>
+              <span className="material-symbols-outlined text-2xl">file_upload</span>
             </button>
           </div>
 
-          {/* Hint to upload or capture */}
-          <div className="text-center pt-1">
-            <button
-              onClick={() => fileInputRef.current?.click()}
-              className="text-xs font-serif font-bold text-[#B5451B] hover:underline inline-flex items-center gap-1"
-            >
-              <span className="material-symbols-outlined text-sm">file_upload</span>
-              <span>{t('upload_hint', 'Or upload raw workshop photo to enhance in 4K studio')}</span>
-            </button>
-          </div>
+          {/* Hidden File Input for Custom Upload */}
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            onChange={handleFileUpload}
+            className="hidden"
+          />
         </div>
       )}
 

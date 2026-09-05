@@ -17,7 +17,6 @@ export interface OnboardingUserData {
 interface OnboardingFlowProps {
   onComplete: (data: OnboardingUserData) => void;
   isDark?: boolean;
-  onToggleTheme?: () => void;
 }
 
 const CRAFT_OPTIONS = [
@@ -68,7 +67,6 @@ const CRAFT_OPTIONS = [
 export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({
   onComplete,
   isDark = false,
-  onToggleTheme,
 }) => {
   // Step 0: Splash / Logo Center Screen
   // Step 1: Personal Details (Full Name*, Mobile*, Email)

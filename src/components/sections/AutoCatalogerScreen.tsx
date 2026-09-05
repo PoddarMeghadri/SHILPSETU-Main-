@@ -150,6 +150,7 @@ const SAMPLE_TRANSCRIPTS: Partial<Record<LanguageCode, SampleVoicePrompt>> = {
 
 export const AutoCatalogerScreen: React.FC<AutoCatalogerProps> = ({
   onAddProduct,
+  onNavigate,
   language = 'hi',
   isDark = false,
 }) => {
@@ -175,8 +176,23 @@ export const AutoCatalogerScreen: React.FC<AutoCatalogerProps> = ({
   const [showSuccess, setShowSuccess] = useState<boolean>(false);
   const [showQRModal, setShowQRModal] = useState<boolean>(false);
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const recognitionRef = useRef<any>(null);
+  const voiceTimeoutRef = useRef<any>(null);
+  const capturedTextRef = useRef<string>('');
+
+  // Clean up timers on unmount
+  useEffect(() => {
+    return () => {
+      if (voiceTimeoutRef.current) clearTimeout(voiceTimeoutRef.current);
+      if (recognitionRef.current) {
+        try {
+          recognitionRef.current.stop();
+        } catch {
+          // ignore
+        }
+      }
+    };
+  }, []);
 
   // Initialize or re-populate when language changes
   useEffect(() => {
@@ -205,12 +221,58 @@ export const AutoCatalogerScreen: React.FC<AutoCatalogerProps> = ({
     setSelectedLang(code);
   };
 
+  const stopVoiceAndProcess = () => {
+    if (voiceTimeoutRef.current) {
+      clearTimeout(voiceTimeoutRef.current);
+      voiceTimeoutRef.current = null;
+    }
+
+    if (recognitionRef.current) {
+      try {
+        recognitionRef.current.stop();
+      } catch {
+        // ignore
+      }
+    }
+
+    setIsRecording(false);
+    setIsTranslating(true);
+
+    setTimeout(() => {
+      setIsTranslating(false);
+
+      const textToUse = capturedTextRef.current || spokenTranscript;
+      const generated = generateLocalizedListing({
+        craftId: 'pottery',
+        spokenText: textToUse,
+        targetLanguage: selectedLang,
+        suggestedPrice: 1250,
+      });
+
+      setTitle(generated.title);
+      setDescription(generated.description);
+      setCategory(generated.category);
+      setPrice(generated.suggestedPrice);
+      setMaterials(generated.materials.join(', '));
+      setEnglishTitle(generated.englishExportTitle);
+      setEnglishDescription(generated.englishExportDesc);
+
+      sound.playSuccess();
+    }, 1200);
+  };
+
   const handleStartVoice = () => {
+    // If already recording, tapping again immediately finishes recording and processes!
+    if (isRecording) {
+      sound.playTap();
+      stopVoiceAndProcess();
+      return;
+    }
+
     sound.playVoiceStart();
     setIsRecording(true);
     setIsLiveSpeech(false);
-
-    let speechCapturedText = '';
+    capturedTextRef.current = '';
 
     // Check Web Speech API availability
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -231,8 +293,8 @@ export const AutoCatalogerScreen: React.FC<AutoCatalogerProps> = ({
             currentTranscript += event.results[i][0].transcript + ' ';
           }
           if (currentTranscript.trim()) {
-            speechCapturedText = currentTranscript.trim();
-            setSpokenTranscript(speechCapturedText);
+            capturedTextRef.current = currentTranscript.trim();
+            setSpokenTranscript(capturedTextRef.current);
             setIsLiveSpeech(true);
           }
         };
@@ -247,40 +309,10 @@ export const AutoCatalogerScreen: React.FC<AutoCatalogerProps> = ({
       }
     }
 
-    // Record for 3.5s or until manually stopped
-    setTimeout(() => {
-      if (recognitionRef.current) {
-        try {
-          recognitionRef.current.stop();
-        } catch {
-          // ignore
-        }
-      }
-
-      setIsRecording(false);
-      setIsTranslating(true);
-
-      setTimeout(() => {
-        setIsTranslating(false);
-
-        const generated = generateLocalizedListing({
-          craftId: 'pottery',
-          spokenText: speechCapturedText || spokenTranscript,
-          targetLanguage: selectedLang,
-          suggestedPrice: 1250,
-        });
-
-        setTitle(generated.title);
-        setDescription(generated.description);
-        setCategory(generated.category);
-        setPrice(generated.suggestedPrice);
-        setMaterials(generated.materials.join(', '));
-        setEnglishTitle(generated.englishExportTitle);
-        setEnglishDescription(generated.englishExportDesc);
-
-        sound.playSuccess();
-      }, 1400);
-    }, 3600);
+    // Generous fallback safety timeout (25 seconds so users aren't cut off)
+    voiceTimeoutRef.current = setTimeout(() => {
+      stopVoiceAndProcess();
+    }, 25000);
   };
 
   const handlePublish = () => {
@@ -390,15 +422,16 @@ export const AutoCatalogerScreen: React.FC<AutoCatalogerProps> = ({
 
             <button
               onClick={handleStartVoice}
-              disabled={isRecording || isTranslating}
+              disabled={isTranslating}
               className={`w-20 h-20 rounded-full flex items-center justify-center shadow-xl transition-all ${
                 isRecording
-                  ? 'bg-[#E8B84B] text-[#1A1815] scale-110 ring-4 ring-[#E8B84B]/50'
+                  ? 'bg-[#E8B84B] text-[#1A1815] scale-110 ring-4 ring-[#E8B84B]/50 animate-pulse'
                   : 'bg-[#B5451B] text-white hover:bg-[#9C3A14] active:scale-95'
               }`}
+              title={isRecording ? 'Tap to finish recording' : 'Tap to start recording'}
             >
               <span className="material-symbols-outlined text-4xl">
-                {isRecording ? 'graphic_eq' : 'mic'}
+                {isRecording ? 'stop' : 'mic'}
               </span>
             </button>
           </div>
@@ -673,11 +706,17 @@ export const AutoCatalogerScreen: React.FC<AutoCatalogerProps> = ({
       {/* Success Modal */}
       <SuccessModal
         isOpen={showSuccess}
-        onClose={() => setShowSuccess(false)}
+        onClose={() => {
+          setShowSuccess(false);
+          onNavigate('b2b');
+        }}
         title={t('listing_published_success', 'Product Published Successfully!')}
         subtitle={t('listing_published_sub', 'Your listing is now live on GeM and your digital storefront.')}
-        actionLabel={t('done', 'Done')}
-        onAction={() => setShowSuccess(false)}
+        actionText={t('continue_to_sell', 'Continue to Sell')}
+        onAction={() => {
+          setShowSuccess(false);
+          onNavigate('b2b');
+        }}
         isDark={isDark}
       />
 

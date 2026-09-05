@@ -97,14 +97,10 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
 
         {/* Content */}
         <div className="relative z-10 space-y-4">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center">
             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/20 border border-white/30 text-[#F4ECDE] text-[11px] font-semibold uppercase tracking-wider">
               <span className="material-symbols-outlined text-xs text-[#E8B84B]">auto_awesome</span>
               {t('screen_studio', 'AI Craft Studio')}
-            </span>
-
-            <span className="text-xs text-[#F4ECDE]/90 font-sans font-medium">
-              {products.length} {t('live_listings', 'Live Listings')}
             </span>
           </div>
 
@@ -298,7 +294,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
             {t('workshop_suite', 'Craft Workshop Suite')}
           </h3>
           <span className="text-xs text-[#B5451B] font-sans font-bold">
-            {t('seven_ai_modules', '7 AI Modules')}
+            {t('seven_modules', '7 Modules')}
           </span>
         </div>
 
@@ -552,9 +548,6 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
             <span className="material-symbols-outlined text-xl text-[#B5451B]">history</span>
             {t('recent_activity', 'Recent Workshop Activity')}
           </h3>
-          <span className="text-xs opacity-70 font-sans font-bold">
-            {t('real_time', 'Real-Time')}
-          </span>
         </div>
 
         <div className="space-y-2.5">
