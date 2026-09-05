@@ -4,6 +4,7 @@ import { ArtisanProfile, LanguageCode } from '../../types';
 import { sound } from '../../services/sound';
 import { useTranslation } from '../../services/translations';
 import { INDIAN_STATES_AND_CITIES, parseLocationString } from '../../data/indianLocations';
+import { DEFAULT_ARTISAN_AVATAR } from '../../data/mockData';
 
 interface EditProfileModalProps {
   isOpen: boolean;
@@ -14,12 +15,12 @@ interface EditProfileModalProps {
   isDark?: boolean;
 }
 
-const DEFAULT_AVATAR = 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=400&auto=format&fit=crop&q=80';
+const DEFAULT_AVATAR = DEFAULT_ARTISAN_AVATAR;
 
 const AVATAR_PRESETS = [
   {
-    name: 'Ranjit (Master Clay)',
-    url: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=400&auto=format&fit=crop&q=80',
+    name: 'Default Artisan Avatar',
+    url: DEFAULT_ARTISAN_AVATAR,
   },
   {
     name: 'Meera (Madhubani)',
@@ -382,7 +383,7 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
               </div>
             </div>
 
-            {/* Name & Craft Title */}
+            {/* Name, Gender & Craft Title */}
             <div className="grid grid-cols-1 gap-3">
               <div>
                 <label className="block text-xs font-medium opacity-80 mb-1">
@@ -400,6 +401,42 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
                   }`}
                   placeholder={t('placeholder_artisan_name', 'e.g. Ranjit Prajapati')}
                 />
+              </div>
+
+              {/* Gender Selection: Male, Female, Others */}
+              <div>
+                <label className="block text-xs font-medium opacity-80 mb-1">
+                  {t('gender', 'Gender / लिंग')} <span className="text-red-500">*</span>
+                </label>
+                <div className="grid grid-cols-3 gap-2">
+                  {[
+                    { id: 'male', label: 'Male', hindi: 'पुरुष', icon: 'male' },
+                    { id: 'female', label: 'Female', hindi: 'महिला', icon: 'female' },
+                    { id: 'other', label: 'Others', hindi: 'अन्य', icon: 'transgender' },
+                  ].map((g) => {
+                    const isSelected = (formData.gender || 'male') === g.id;
+                    return (
+                      <button
+                        key={g.id}
+                        type="button"
+                        onClick={() => {
+                          sound.playTap();
+                          setFormData((prev) => ({ ...prev, gender: g.id as 'male' | 'female' | 'other' }));
+                        }}
+                        className={`flex items-center justify-center gap-1.5 py-2 px-2.5 rounded-xl border text-xs font-serif transition-all cursor-pointer ${
+                          isSelected
+                            ? 'bg-[#B5451B] text-white border-[#B5451B] shadow-sm scale-[1.02]'
+                            : isDark
+                            ? 'bg-[#121411] border-[#2D3A2B] text-white/80 hover:bg-[#252E22]'
+                            : 'bg-white border-[#22331E]/20 text-[#1A1815] hover:bg-[#FAF4E8]'
+                        }`}
+                      >
+                        <span className="material-symbols-outlined text-base">{g.icon}</span>
+                        <span className="font-semibold">{g.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
 
               <div>

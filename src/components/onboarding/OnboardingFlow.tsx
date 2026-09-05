@@ -6,6 +6,7 @@ import { INDIAN_STATES_AND_CITIES } from '../../data/indianLocations';
 
 export interface OnboardingUserData {
   fullName: string;
+  gender: 'male' | 'female' | 'other';
   state: string;
   city: string;
   mobile: string;
@@ -77,6 +78,7 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({
 
   // User form data - initialized blank for user input
   const [fullName, setFullName] = useState<string>('');
+  const [gender, setGender] = useState<'male' | 'female' | 'other'>('male');
   const [selectedState, setSelectedState] = useState<string>('');
   const [selectedCity, setSelectedCity] = useState<string>('');
   const [customCity, setCustomCity] = useState<string>('');
@@ -206,6 +208,7 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({
     const effectiveCity = selectedCity === 'Other' ? customCity.trim() : selectedCity;
     onComplete({
       fullName: fullName.trim(),
+      gender,
       state: selectedState,
       city: effectiveCity,
       mobile: mobile.trim(),
@@ -357,6 +360,45 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({
                   {nameError && (
                     <p className="text-[11px] text-red-500 mt-1 font-medium">{nameError}</p>
                   )}
+                </div>
+
+                {/* Gender Selection: Male, Female, Others */}
+                <div>
+                  <label className="block text-xs font-bold font-serif uppercase tracking-wider text-[#B5451B] mb-1.5">
+                    Gender / लिंग <span className="text-red-500">*</span>
+                  </label>
+                  <div className="grid grid-cols-3 gap-2">
+                    {[
+                      { id: 'male', label: 'Male', hindi: 'पुरुष', icon: 'male' },
+                      { id: 'female', label: 'Female', hindi: 'महिला', icon: 'female' },
+                      { id: 'other', label: 'Others', hindi: 'अन्य', icon: 'transgender' },
+                    ].map((g) => {
+                      const isSelected = gender === g.id;
+                      return (
+                        <button
+                          key={g.id}
+                          type="button"
+                          onClick={() => {
+                            sound.playTap();
+                            setGender(g.id as 'male' | 'female' | 'other');
+                          }}
+                          className={`flex flex-col items-center justify-center py-2.5 px-2 rounded-2xl border text-xs font-serif transition-all cursor-pointer ${
+                            isSelected
+                              ? 'bg-[#B5451B] text-white border-[#B5451B] shadow-md scale-[1.02]'
+                              : isDark
+                              ? 'bg-[#1C221A] border-[#2D3A2B] text-white/80 hover:bg-[#252E22]'
+                              : 'bg-white border-[#22331E]/20 text-[#1A1815] hover:bg-[#FAF4E8]'
+                          }`}
+                        >
+                          <span className="material-symbols-outlined text-xl mb-0.5">{g.icon}</span>
+                          <span className="font-bold">{g.label}</span>
+                          <span className={`text-[10px] ${isSelected ? 'text-white/80' : 'opacity-60'}`}>
+                            {g.hindi}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
 
                 {/* State & City / Craft Cluster (MANDATORY - USER SELECTED) */}

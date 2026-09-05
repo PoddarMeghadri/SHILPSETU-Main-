@@ -43,6 +43,7 @@ export interface LanguageOption {
 
 export interface ArtisanProfile {
   name: string;
+  gender?: 'male' | 'female' | 'other';
   title: string;
   location: string;
   craft: string;

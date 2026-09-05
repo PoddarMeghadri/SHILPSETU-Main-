@@ -4,7 +4,10 @@ import { ProductItem, LanguageCode, ScreenId } from '../../types';
 import { LANGUAGES } from '../../data/mockData';
 import { sound } from '../../services/sound';
 import { SuccessModal } from '../common/SuccessModal';
+import { PrintableCraftQRCodeModal } from '../common/PrintableCraftQRCodeModal';
 import { useTranslation } from '../../services/translations';
+import { generateLocalizedListing } from '../../services/aiTranslationService';
+import { isRtlLanguage } from '../../i18n/types';
 
 interface AutoCatalogerProps {
   products: ProductItem[];
@@ -17,8 +20,6 @@ interface AutoCatalogerProps {
 interface SampleVoicePrompt {
   lang: LanguageCode;
   nativeTranscript: string;
-  englishTitle: string;
-  englishDesc: string;
   category: string;
   materials: string[];
   suggestedPrice: number;
@@ -45,9 +46,6 @@ const SAMPLE_TRANSCRIPTS: Partial<Record<LanguageCode, SampleVoicePrompt>> = {
     lang: 'hi',
     nativeTranscript:
       'यह लाल मिट्टी का कलश और सुराही है, जिसे हमने गंगा की बालू और नदी की चिकनी मिट्टी मिलाकर चाक पर गढ़ा है। इस पर सरसों के तेल की मालिश करके धीमी लकड़ी की भट्टी में पकाया गया है।',
-    englishTitle: 'Handcrafted Terracotta Ganga Riverbed Earthenware Urn',
-    englishDesc:
-      'Masterfully hand-thrown on a traditional stone wheel using rich alluvial clay from the Ganges basin. Burnished with river pebbles and wood-fired to achieve a rich natural terracotta patina that naturally cools water.',
     category: 'Pottery & Earthenware',
     materials: ['Alluvial Riverbed Clay', 'Natural River Silt', 'Organic Mustard Oil Polish'],
     suggestedPrice: 1250,
@@ -56,9 +54,6 @@ const SAMPLE_TRANSCRIPTS: Partial<Record<LanguageCode, SampleVoicePrompt>> = {
     lang: 'bn',
     nativeTranscript:
       'এটি একটি হস্তনির্মিত পোড়ামাটির পুতুল ও ফুলদানি। লাল মাটি ও নদীর পলি দিয়ে তৈরি, নিখুঁত খোদাই করা হয়েছে এবং কাঠের আগুনে পোড়ানো হয়েছে।',
-    englishTitle: 'Artisanal Bankura Terracotta Floral Vase & Figurine',
-    englishDesc:
-      'Authentic Bengal terracotta crafted with pure red earth and fine river silt. Features intricate chiseled floral filigree inspired by ancient Bishnupur temple architecture.',
     category: 'Terracotta Craft',
     materials: ['Red Clay Earth', 'Organic Mineral Wash', 'Wood Ash Glaze'],
     suggestedPrice: 1100,
@@ -67,9 +62,6 @@ const SAMPLE_TRANSCRIPTS: Partial<Record<LanguageCode, SampleVoicePrompt>> = {
     lang: 'ta',
     nativeTranscript:
       'இது பாரம்பரிய சுடுமண் கலசம் மற்றும் அலங்கார பாத்திரம். ஆற்று களிமண் கொண்டு சக்கரத்தால் உருவாக்கப்பட்டு மரச் சூளையில் சுடப்பட்டது.',
-    englishTitle: 'Traditional Tamil Nadu Terracotta Heritage Urli & Pot',
-    englishDesc:
-      'Hand-molded traditional earthenware vessel crafted using heritage riverbed clay. Perfect for festive floating flower displays and sustainable home décor.',
     category: 'Heritage Pottery',
     materials: ['Riverbed Silt', 'Natural Earth Clay', 'Herbal Polish'],
     suggestedPrice: 1350,
@@ -78,9 +70,6 @@ const SAMPLE_TRANSCRIPTS: Partial<Record<LanguageCode, SampleVoicePrompt>> = {
     lang: 'mr',
     nativeTranscript:
       'हा पारंपरिक लाल मातीचा कलश आहे. चाकावर हाताने घडवलेला आणि लाकडाच्या मंद भट्टीत भाजलेला आहे.',
-    englishTitle: 'Heritage Handcrafted Red Clay Kumbha & Planter',
-    englishDesc:
-      'Authentic earthenware pot wheel-thrown with natural organic clay and fired in wood kilns for timeless strength and rustic charm.',
     category: 'Pottery',
     materials: ['Natural Red Clay', 'River Sand', 'Organic Glaze'],
     suggestedPrice: 950,
@@ -89,9 +78,6 @@ const SAMPLE_TRANSCRIPTS: Partial<Record<LanguageCode, SampleVoicePrompt>> = {
     lang: 'te',
     nativeTranscript:
       'ఇది సంప్రదాయ ఎర్రమట్టి కుండ. నది ఒండ్రు మట్టితో చేతితో చక్రంపై తయారుచేయబడి సహజమైన పొయ్యిలో కాల్చబడింది.',
-    englishTitle: 'Artisanal Terracotta Water Cooler & Planter Vessel',
-    englishDesc:
-      'Handcrafted on a stone potter wheel using natural river clay. Designed for optimal evaporative cooling and earthy rustic aesthetics.',
     category: 'Terracotta',
     materials: ['Alluvial Clay', 'Natural River Soil'],
     suggestedPrice: 1050,
@@ -99,32 +85,23 @@ const SAMPLE_TRANSCRIPTS: Partial<Record<LanguageCode, SampleVoicePrompt>> = {
   gu: {
     lang: 'gu',
     nativeTranscript:
-      'આ લાલ માટીનો કલાત્મક ઘડો છે. નદીની માટીમાંથી ચાકડા પર હાથેથી બનાવીને દેશી ભઠ્ઠીમાં પકવેલો છે.',
-    englishTitle: 'Handcrafted Kutch Terracotta Hand-Painted Urn',
-    englishDesc:
-      'Hand-thrown terracotta pot with subtle artisan carvings made using sustainable riverbed clay and fired in traditional pit kilns.',
-    category: 'Pottery',
-    materials: ['Natural Clay', 'Earth Pigments'],
+      'આ પરંપરાગત હાથથી બનાવેલી લાલ માટીની સુરાહી છે. નદીની ચીકણી માટીમાંથી ચાકડા પર તૈયાર કરી લાકડાની ભઠ્ઠીમાં પકવવામાં આવી છે.',
+    category: 'Pottery & Clay Art',
+    materials: ['River Clay', 'Natural Mineral Glaze'],
     suggestedPrice: 1150,
   },
   kn: {
     lang: 'kn',
     nativeTranscript:
-      'ಇದು ಸಾಂಪ್ರದಾಯಿಕ ಮಣ್ಣಿನ ಕುಡಿಕೆ ಮತ್ತು ಹೂದಾನಿ. ನದಿಯ ಮೆಕ್ಕಲು ಮಣ್ಣಿನಿಂದ ಚಕ್ರದ ಮೇಲೆ ಕೈಯಿಂದ ತಯಾರಿಸಿ ಮರದ ಬೆಂಕಿಯಲ್ಲಿ ಸುಡಲಾಗಿದೆ.',
-    englishTitle: 'Traditional Karnataka Terracotta Handcrafted Planter',
-    englishDesc:
-      'Handcrafted on a stone potter wheel using natural river clay. Durable and eco-friendly home decor item.',
-    category: 'Pottery & Ceramics',
-    materials: ['River Clay', 'Natural Mineral Polish'],
-    suggestedPrice: 1180,
+      'ಇದು ಸಾಂಪ್ರದಾಯಿಕ ಕೈಯಿಂದ ಮಾಡಿದ ಜೇಡಿಮಣ್ಣಿನ ಮಡಕೆ ಮತ್ತು ಹೂಕುಂಡ. ನದಿಯ ಮಣ್ಣಿನಲ್ಲಿ ಚಕ್ರದ ಮೇಲೆ ತಯಾರಿಸಿ ಮರದ ಬೆಂಕಿಯಲ್ಲಿ ಸುಡಲಾಗಿದೆ.',
+    category: 'Pottery Craft',
+    materials: ['Riverbed Clay', 'Natural Glaze'],
+    suggestedPrice: 1200,
   },
   ml: {
     lang: 'ml',
     nativeTranscript:
       'ഇത് പരമ്പരാഗത കളിമൺ പാത്രവും പൂപ്പാത്രവുമാണ്. പുഴയിലെ കളിമണ്ണിൽ ചക്രത്തിൽ കൈകൊണ്ട് നിർമ്മിച്ച് വിറക് അടുപ്പിൽ ചുട്ടെടുത്തത്.',
-    englishTitle: 'Heritage Kerala Hand-Molded Terracotta Urli & Pot',
-    englishDesc:
-      'Authentic Kerala earthenware crafted with pure riverbed clay, sun-dried and kiln-fired for natural cool storage.',
     category: 'Pottery & Ceramics',
     materials: ['Natural River Clay', 'Herbal Finish'],
     suggestedPrice: 1280,
@@ -133,9 +110,6 @@ const SAMPLE_TRANSCRIPTS: Partial<Record<LanguageCode, SampleVoicePrompt>> = {
     lang: 'pa',
     nativeTranscript:
       'ਇਹ ਹੱਥ ਨਾਲ ਬਣਿਆ ਲਾਲ ਮਿੱਟੀ ਦਾ ਘੜਾ ਅਤੇ ਫੁੱਲਦਾਨ ਹੈ, ਜੋ ਕੁਦਰਤੀ ਮਿੱਟੀ ਨਾਲ ਚੱਕ ਉੱਤੇ ਤਿਆਰ ਕੀਤਾ ਗਿਆ ਹੈ।',
-    englishTitle: 'Artisanal Hand-Thrown Terracotta Punjabi Matka',
-    englishDesc:
-      'Handmade terracotta matka vessel wheel-thrown with pure river silt and kiln fired for cooling water naturally.',
     category: 'Pottery',
     materials: ['River Silt Clay', 'Organic Wash'],
     suggestedPrice: 1020,
@@ -144,9 +118,6 @@ const SAMPLE_TRANSCRIPTS: Partial<Record<LanguageCode, SampleVoicePrompt>> = {
     lang: 'or',
     nativeTranscript:
       'ଏହା ପାରମ୍ପରିକ ମାଟିର ପାତ୍ର ଏବଂ କଳସ, ଯାହା ନଦୀର ଚିକ୍କଣ ମାଟିରେ ଚକରେ ହାତରେ ତିଆରି ହୋଇ କାଠ ନିଆଁରେ ପୋଡାଯାଇଛି।',
-    englishTitle: 'Handcrafted Odisha Earthenware Heritage Urn',
-    englishDesc:
-      'Masterfully hand-thrown on a traditional wheel using rich alluvial clay from Odisha riverbeds.',
     category: 'Pottery & Earthenware',
     materials: ['Alluvial Clay', 'Natural Polish'],
     suggestedPrice: 1120,
@@ -155,9 +126,6 @@ const SAMPLE_TRANSCRIPTS: Partial<Record<LanguageCode, SampleVoicePrompt>> = {
     lang: 'as',
     nativeTranscript:
       'এইটো ব্ৰহ্মপুত্ৰৰ পলি মাটিৰে হাতেৰে তৈয়াৰ কৰা পোৰামাটিৰ পাত্ৰ আৰু ফুলদানি, যিটো কাঠৰ জুয়েৰে পুৰি মজবুত কৰা হৈছে।',
-    englishTitle: 'Handcrafted Assam Terracotta Earthenware Vase',
-    englishDesc:
-      'Authentic Assam terracotta crafted with rich alluvial soil from the Brahmaputra basin.',
     category: 'Terracotta Craft',
     materials: ['Riverbed Clay', 'Wood Ash Finish'],
     suggestedPrice: 1150,
@@ -166,9 +134,6 @@ const SAMPLE_TRANSCRIPTS: Partial<Record<LanguageCode, SampleVoicePrompt>> = {
     lang: 'ur',
     nativeTranscript:
       'یہ سرخ مٹی کا روایتی صراحی اور گلدان ہے جسے ندی کی مٹی سے چاک پر ہاتھ سے تراشا گیا ہے اور دھیمی آنچ پر پکایا گیا ہے۔',
-    englishTitle: 'Artisanal Hand-Crafted Red Terracotta Surahi & Urn',
-    englishDesc:
-      'Authentic handcrafted earthenware shaped on a stone wheel, polished with river stones and kiln-fired.',
     category: 'Pottery & Ceramics',
     materials: ['Red Alluvial Clay', 'Natural Polish'],
     suggestedPrice: 1200,
@@ -177,75 +142,83 @@ const SAMPLE_TRANSCRIPTS: Partial<Record<LanguageCode, SampleVoicePrompt>> = {
     lang: 'en',
     nativeTranscript:
       'This is a hand-thrown red clay terracotta vase crafted from local riverbed clay and wood-fired in an open kiln with organic oil polish.',
-    englishTitle: 'Artisan Hand-Thrown Red Terracotta Urli Vase',
-    englishDesc:
-      'Authentic handcrafted earthenware vase shaped on a stone wheel, polished with river stones and fired in wood kilns for rustic durability.',
-    category: 'Pottery & Ceramics',
-    materials: ['Red Alluvial Clay', 'River Sand', 'Mustard Oil Wash'],
-    suggestedPrice: 1200,
+    category: 'Pottery & Earthenware',
+    materials: ['Alluvial Riverbed Clay', 'Natural Silt', 'Organic Oil Polish'],
+    suggestedPrice: 1250,
   },
 };
 
 export const AutoCatalogerScreen: React.FC<AutoCatalogerProps> = ({
   onAddProduct,
+  language = 'hi',
   isDark = false,
 }) => {
-  const { t, language } = useTranslation();
+  const { t } = useTranslation();
   const [selectedLang, setSelectedLang] = useState<LanguageCode>(language);
   const [isRecording, setIsRecording] = useState<boolean>(false);
   const [isTranslating, setIsTranslating] = useState<boolean>(false);
-  const [showSuccess, setShowSuccess] = useState<boolean>(false);
+  const [activeTab, setActiveTab] = useState<'native' | 'english'>('native');
 
-  // Sync selectedLang with active global language
-  useEffect(() => {
-    setSelectedLang(language);
-  }, [language]);
+  // Localized AI form fields
+  const [title, setTitle] = useState<string>('');
+  const [description, setDescription] = useState<string>('');
+  const [category, setCategory] = useState<string>('');
+  const [materials, setMaterials] = useState<string>('');
+  const [englishTitle, setEnglishTitle] = useState<string>('');
+  const [englishDescription, setEnglishDescription] = useState<string>('');
 
-  const currentSample = SAMPLE_TRANSCRIPTS[selectedLang] || SAMPLE_TRANSCRIPTS.hi;
-  const [spokenTranscript, setSpokenTranscript] = useState<string>(currentSample.nativeTranscript);
+  const [price, setPrice] = useState<number>(1250);
+  const [materialCost, setMaterialCost] = useState<number>(350);
+  const [hoursWorked, setHoursWorked] = useState<number>(8);
+  const [spokenTranscript, setSpokenTranscript] = useState<string>('');
   const [isLiveSpeech, setIsLiveSpeech] = useState<boolean>(false);
+  const [showSuccess, setShowSuccess] = useState<boolean>(false);
+  const [showQRModal, setShowQRModal] = useState<boolean>(false);
 
-  // Editable Form Fields
-  const [title, setTitle] = useState<string>(currentSample.englishTitle);
-  const [description, setDescription] = useState<string>(currentSample.englishDesc);
-  const [category, setCategory] = useState<string>(currentSample.category);
-  const [price, setPrice] = useState<number>(currentSample.suggestedPrice);
-  const [materials, setMaterials] = useState<string>(currentSample.materials.join(', '));
-  const [hoursWorked, setHoursWorked] = useState<number>(5);
-  const [materialCost, setMaterialCost] = useState<number>(140);
-
-  // Speech Recognition Reference
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const recognitionRef = useRef<any>(null);
 
-  // When speaking language changes, update sample prompt if no custom speech recorded
-  const handleLanguageChange = (langCode: LanguageCode) => {
+  // Initialize or re-populate when language changes
+  useEffect(() => {
+    const prompt = SAMPLE_TRANSCRIPTS[selectedLang] || SAMPLE_TRANSCRIPTS.hi!;
+    setSpokenTranscript(prompt.nativeTranscript);
+
+    const generated = generateLocalizedListing({
+      craftId: 'pottery',
+      targetLanguage: selectedLang,
+      suggestedPrice: prompt.suggestedPrice,
+    });
+
+    setTitle(generated.title);
+    setDescription(generated.description);
+    setCategory(generated.category);
+    setMaterials(generated.materials.join(', '));
+    setEnglishTitle(generated.englishExportTitle);
+    setEnglishDescription(generated.englishExportDesc);
+    setPrice(generated.suggestedPrice);
+  }, [selectedLang]);
+
+  const isCurrentLangRtl = isRtlLanguage(selectedLang);
+
+  const handleLanguageChange = (code: LanguageCode) => {
     sound.playTap();
-    setSelectedLang(langCode);
-    const newPrompt = SAMPLE_TRANSCRIPTS[langCode] || SAMPLE_TRANSCRIPTS.hi;
-    setSpokenTranscript(newPrompt.nativeTranscript);
-    setTitle(newPrompt.englishTitle);
-    setDescription(newPrompt.englishDesc);
-    setCategory(newPrompt.category);
-    setPrice(newPrompt.suggestedPrice);
-    setMaterials(newPrompt.materials.join(', '));
-    setIsLiveSpeech(false);
+    setSelectedLang(code);
   };
 
   const handleStartVoice = () => {
-    sound.playMicStart();
+    sound.playVoiceStart();
     setIsRecording(true);
     setIsLiveSpeech(false);
 
-    // Initialize Web Speech API if supported in browser
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const SpeechRecognitionClass = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-
     let speechCapturedText = '';
 
-    if (SpeechRecognitionClass) {
+    // Check Web Speech API availability
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+
+    if (SpeechRecognition) {
       try {
-        const recognition = new SpeechRecognitionClass();
+        const recognition = new SpeechRecognition();
         recognitionRef.current = recognition;
         recognition.lang = SPEECH_LANG_MAP[selectedLang] || 'hi-IN';
         recognition.continuous = true;
@@ -290,20 +263,20 @@ export const AutoCatalogerScreen: React.FC<AutoCatalogerProps> = ({
       setTimeout(() => {
         setIsTranslating(false);
 
-        // If user spoke live words, reflect them clearly in the generated listing
-        if (speechCapturedText && speechCapturedText.length > 5) {
-          setTitle(`Artisanal Handcrafted ${category} (${speechCapturedText.slice(0, 30)}...)`);
-          setDescription(
-            `Masterfully handcrafted following authentic artisan traditions: "${speechCapturedText}". Natural materials and traditional wood-fire finishing.`
-          );
-        } else {
-          const prompt = SAMPLE_TRANSCRIPTS[selectedLang] || SAMPLE_TRANSCRIPTS.hi;
-          setTitle(prompt.englishTitle);
-          setDescription(prompt.englishDesc);
-          setCategory(prompt.category);
-          setPrice(prompt.suggestedPrice);
-          setMaterials(prompt.materials.join(', '));
-        }
+        const generated = generateLocalizedListing({
+          craftId: 'pottery',
+          spokenText: speechCapturedText || spokenTranscript,
+          targetLanguage: selectedLang,
+          suggestedPrice: 1250,
+        });
+
+        setTitle(generated.title);
+        setDescription(generated.description);
+        setCategory(generated.category);
+        setPrice(generated.suggestedPrice);
+        setMaterials(generated.materials.join(', '));
+        setEnglishTitle(generated.englishExportTitle);
+        setEnglishDescription(generated.englishExportDesc);
 
         sound.playSuccess();
       }, 1400);
@@ -314,8 +287,8 @@ export const AutoCatalogerScreen: React.FC<AutoCatalogerProps> = ({
     sound.playTap();
     const newProd: ProductItem = {
       id: `prod-${Date.now()}`,
-      title,
-      description,
+      title: activeTab === 'native' ? title : englishTitle,
+      description: activeTab === 'native' ? description : englishDescription,
       category,
       price,
       materialCost,
@@ -334,8 +307,8 @@ export const AutoCatalogerScreen: React.FC<AutoCatalogerProps> = ({
   };
 
   return (
-    <div className="min-h-screen pb-28 pt-2 px-4 max-w-md mx-auto space-y-5">
-      {/* Top Banner / Explainer */}
+    <div className="min-h-screen pb-28 pt-2 px-4 max-w-md mx-auto space-y-4">
+      {/* Top Banner */}
       <div
         className={`rounded-3xl p-4 border flex items-center gap-3 shadow-xs ${
           isDark
@@ -402,7 +375,7 @@ export const AutoCatalogerScreen: React.FC<AutoCatalogerProps> = ({
             {isRecording
               ? t('recording_dialect', 'Listening to your voice...')
               : isTranslating
-              ? t('analyzing_voice', 'Translating to English SEO...')
+              ? t('analyzing_voice', 'Crafting native and export listings...')
               : t('tap_to_record_craft', 'Tap to Record Craft Details')}
           </p>
 
@@ -418,10 +391,10 @@ export const AutoCatalogerScreen: React.FC<AutoCatalogerProps> = ({
             <button
               onClick={handleStartVoice}
               disabled={isRecording || isTranslating}
-              className={`w-20 h-20 rounded-full flex items-center justify-center transition-all shadow-artisan ${
+              className={`w-20 h-20 rounded-full flex items-center justify-center shadow-xl transition-all ${
                 isRecording
-                  ? 'bg-[#B5451B] text-white scale-105'
-                  : 'bg-[#E8B84B] hover:bg-[#D4A33B] text-[#1A1815] active:scale-90'
+                  ? 'bg-[#E8B84B] text-[#1A1815] scale-110 ring-4 ring-[#E8B84B]/50'
+                  : 'bg-[#B5451B] text-white hover:bg-[#9C3A14] active:scale-95'
               }`}
             >
               <span className="material-symbols-outlined text-4xl">
@@ -447,10 +420,13 @@ export const AutoCatalogerScreen: React.FC<AutoCatalogerProps> = ({
           )}
 
           {/* Spoken Native Script Transcript Preview */}
-          <div className="p-3.5 bg-black/40 rounded-2xl border border-white/10 text-left space-y-1.5">
+          <div
+            dir={isCurrentLangRtl ? 'rtl' : 'ltr'}
+            className="p-3.5 bg-black/40 rounded-2xl border border-white/10 text-left space-y-1.5"
+          >
             <div className="flex items-center justify-between">
               <span className="text-[10px] text-[#E8B84B] uppercase tracking-wider font-semibold flex items-center gap-1">
-                <span className="material-symbols-outlined text-xs">record_voice_over</span>
+                <span className="material-symbols-outlined text-xs rtl-flip">record_voice_over</span>
                 {t('spoken_transcript', 'Spoken Transcript')} (
                 {LANGUAGES.find((l) => l.code === selectedLang)?.nativeLabel}):
               </span>
@@ -467,8 +443,48 @@ export const AutoCatalogerScreen: React.FC<AutoCatalogerProps> = ({
         </div>
       </div>
 
-      {/* Generated English SEO Listing Card */}
+      {/* Bilingual Toggle: Native Listing vs English SEO Export */}
       <div
+        className={`flex p-1 rounded-2xl border ${
+          isDark ? 'bg-[#1C221A] border-[#2D3A2B]' : 'bg-[#EFE4CF] border-[#22331E]/10'
+        }`}
+      >
+        <button
+          onClick={() => {
+            sound.playTap();
+            setActiveTab('native');
+          }}
+          className={`flex-1 py-2 text-xs font-serif font-bold rounded-xl transition-all ${
+            activeTab === 'native'
+              ? 'bg-[#B5451B] text-white shadow-xs'
+              : isDark
+              ? 'text-[#F4ECDE]/70 hover:text-white'
+              : 'text-[#22331E]/70 hover:text-[#1A1815]'
+          }`}
+        >
+          {t('view_native_listing', 'Native Listing')} ({LANGUAGES.find((l) => l.code === selectedLang)?.nativeLabel})
+        </button>
+
+        <button
+          onClick={() => {
+            sound.playTap();
+            setActiveTab('english');
+          }}
+          className={`flex-1 py-2 text-xs font-serif font-bold rounded-xl transition-all ${
+            activeTab === 'english'
+              ? 'bg-[#22331E] text-[#F4ECDE] shadow-xs'
+              : isDark
+              ? 'text-[#F4ECDE]/70 hover:text-white'
+              : 'text-[#22331E]/70 hover:text-[#1A1815]'
+          }`}
+        >
+          {t('view_english_seo', 'English SEO Export (GeM / B2B)')}
+        </button>
+      </div>
+
+      {/* Generated Listing Card */}
+      <div
+        dir={activeTab === 'native' && isCurrentLangRtl ? 'rtl' : 'ltr'}
         className={`rounded-3xl p-5 border shadow-xs space-y-4 ${
           isDark
             ? 'bg-[#1C221A] text-[#F4ECDE] border-[#2D3A2B]'
@@ -478,10 +494,14 @@ export const AutoCatalogerScreen: React.FC<AutoCatalogerProps> = ({
         <div className="flex items-center justify-between pb-2 border-b border-[#22331E]/10">
           <h4 className="font-serif font-bold text-base flex items-center gap-1.5">
             <span className="material-symbols-outlined text-lg text-[#B5451B]">verified</span>
-            {t('ai_generated_listing', 'AI Generated Listing')}
+            {activeTab === 'native'
+              ? t('ai_generated_listing', 'AI Generated Native Listing')
+              : t('view_english_seo', 'GeM / Global B2B Export')}
           </h4>
           <span className="px-2.5 py-0.5 bg-[#22331E]/10 text-[#22331E] dark:text-[#E8B84B] dark:bg-[#E8B84B]/10 text-[10px] font-bold uppercase rounded-full border border-[#22331E]/20">
-            {t('seo_optimized', 'SEO Optimized')}
+            {activeTab === 'native'
+              ? LANGUAGES.find((l) => l.code === selectedLang)?.nativeLabel
+              : t('seo_optimized', 'SEO Optimized')}
           </span>
         </div>
 
@@ -494,8 +514,10 @@ export const AutoCatalogerScreen: React.FC<AutoCatalogerProps> = ({
             </label>
             <input
               type="text"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
+              value={activeTab === 'native' ? title : englishTitle}
+              onChange={(e) =>
+                activeTab === 'native' ? setTitle(e.target.value) : setEnglishTitle(e.target.value)
+              }
               className={`w-full px-3.5 py-2.5 rounded-2xl border text-sm font-serif focus:outline-hidden focus:ring-2 focus:ring-[#B5451B] ${
                 isDark
                   ? 'bg-[#121411] border-[#2D3A2B] text-white'
@@ -546,8 +568,12 @@ export const AutoCatalogerScreen: React.FC<AutoCatalogerProps> = ({
             </label>
             <textarea
               rows={3}
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
+              value={activeTab === 'native' ? description : englishDescription}
+              onChange={(e) =>
+                activeTab === 'native'
+                  ? setDescription(e.target.value)
+                  : setEnglishDescription(e.target.value)
+              }
               className={`w-full px-3.5 py-2 rounded-2xl border text-xs leading-relaxed focus:outline-hidden focus:ring-2 focus:ring-[#B5451B] resize-none ${
                 isDark
                   ? 'bg-[#121411] border-[#2D3A2B] text-white'
@@ -608,14 +634,40 @@ export const AutoCatalogerScreen: React.FC<AutoCatalogerProps> = ({
           </div>
         </div>
 
-        {/* Publish Button */}
-        <button
-          onClick={handlePublish}
-          className="w-full bg-[#B5451B] hover:bg-[#9C3A14] text-white font-serif font-bold py-3.5 rounded-2xl text-sm shadow-md active:scale-98 transition-all flex items-center justify-center gap-2 mt-2"
-        >
-          <span className="material-symbols-outlined text-xl">cloud_upload</span>
-          <span>{t('publish_craft', 'Publish to GeM & Storefront')}</span>
-        </button>
+        {/* Info Note */}
+        <p className="text-[11px] opacity-75 italic text-center">
+          {t(
+            'bilingual_export_note',
+            'AI generates your craft story in your mother tongue and creates an English export for GeM & global buyers.'
+          )}
+        </p>
+
+        {/* Action Buttons: Publish + Print Physical QR Label */}
+        <div className="space-y-2 pt-2">
+          <button
+            onClick={handlePublish}
+            className="w-full bg-[#B5451B] hover:bg-[#9C3A14] text-white font-serif font-bold py-3.5 rounded-2xl text-sm shadow-md active:scale-98 transition-all flex items-center justify-center gap-2"
+          >
+            <span className="material-symbols-outlined text-xl">cloud_upload</span>
+            <span>{t('publish_craft', 'Publish to GeM & Storefront')}</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              sound.playTap();
+              setShowQRModal(true);
+            }}
+            className={`w-full py-2.5 px-4 rounded-2xl border text-xs font-bold flex items-center justify-center gap-2 active:scale-98 transition-all ${
+              isDark
+                ? 'bg-[#1C221A] border-[#D4A759]/40 text-[#F4ECDE] hover:bg-[#252E22]'
+                : 'bg-white border-[#D4A759]/60 text-[#1A1815] hover:bg-[#FAF4E8]'
+            }`}
+          >
+            <span className="material-symbols-outlined text-lg text-[#B5451B]">qr_code_2</span>
+            <span>{t('generate_qr_label', 'Print Physical QR Label')}</span>
+          </button>
+        </div>
       </div>
 
       {/* Success Modal */}
@@ -626,6 +678,20 @@ export const AutoCatalogerScreen: React.FC<AutoCatalogerProps> = ({
         subtitle={t('listing_published_sub', 'Your listing is now live on GeM and your digital storefront.')}
         actionLabel={t('done', 'Done')}
         onAction={() => setShowSuccess(false)}
+        isDark={isDark}
+      />
+
+      {/* Printable Physical Craft Hangtag Modal */}
+      <PrintableCraftQRCodeModal
+        isOpen={showQRModal}
+        onClose={() => setShowQRModal(false)}
+        craftTitle={activeTab === 'native' ? title : englishTitle || title}
+        category={category}
+        price={price}
+        artisanName="Rameshwar Prasad"
+        artisanLocation="Jaipur, Rajasthan"
+        materials={materials}
+        craftId="craft-terracotta-vase-98"
         isDark={isDark}
       />
     </div>

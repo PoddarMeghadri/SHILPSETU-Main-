@@ -2,12 +2,14 @@ import React, { useState, useRef, useEffect } from 'react';
 import { ArtisanProfile, ProductItem, ScreenId, LanguageCode } from '../../types';
 import { sound } from '../../services/sound';
 import { EditProfileModal } from '../profile/EditProfileModal';
+import { ExportPortfolioModal } from '../profile/ExportPortfolioModal';
 import { WhatsAppIcon, InstagramIcon, FacebookIcon, XIcon, BlueVerifiedBadge } from '../common/SocialIcons';
 import { SocialRedirectModal, SocialPlatformType } from '../common/SocialRedirectModal';
 import { ShareWorkshopModal } from '../common/ShareWorkshopModal';
 import { useTranslation } from '../../services/translations';
+import { DEFAULT_ARTISAN_AVATAR } from '../../data/mockData';
 
-const DEFAULT_AVATAR = 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=400&auto=format&fit=crop&q=80';
+const DEFAULT_AVATAR = DEFAULT_ARTISAN_AVATAR;
 
 interface ProfileScreenProps {
   artisan: ArtisanProfile;
@@ -24,6 +26,7 @@ interface ProfileScreenProps {
 
 export const ProfileScreen: React.FC<ProfileScreenProps> = ({
   artisan,
+  products = [],
   isOffline,
   onToggleOffline,
   onNavigate,
@@ -34,6 +37,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
 }) => {
   const { t, language } = useTranslation();
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  const [isExportPortfolioOpen, setIsExportPortfolioOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [redirectPlatform, setRedirectPlatform] = useState<SocialPlatformType | null>(null);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
@@ -225,9 +229,22 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
           <p className="text-xs font-serif font-semibold text-[#B5451B] mt-0.5">
             {t('artisan_default_title', artisan.title)}
           </p>
-          <p className="text-xs opacity-75 font-sans mt-0.5">
-            {artisan.location} • {t('artisan_default_craft', artisan.craft)}
-          </p>
+          <div className="text-xs opacity-80 font-sans mt-0.5 flex items-center justify-center gap-1.5 flex-wrap">
+            <span>{artisan.location}</span>
+            <span>•</span>
+            <span>{t('artisan_default_craft', artisan.craft)}</span>
+            {artisan.gender && (
+              <>
+                <span>•</span>
+                <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-[#B5451B]/10 text-[#B5451B] dark:text-[#FFA680]">
+                  <span className="material-symbols-outlined text-xs">
+                    {artisan.gender === 'male' ? 'male' : artisan.gender === 'female' ? 'female' : 'transgender'}
+                  </span>
+                  <span>{artisan.gender === 'male' ? 'Male' : artisan.gender === 'female' ? 'Female' : 'Others'}</span>
+                </span>
+              </>
+            )}
+          </div>
 
           {/* Contact Details - Display only provided mobile and email */}
           {((artisan.mobile && artisan.mobile.trim().length > 0) ||
@@ -463,10 +480,10 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
         </h4>
 
         <div className="space-y-2">
-          {/* Setting 1: Dark Mode Toggle */}
+          {/* Setting 1: Dark Mode Toggle Option */}
           {onToggleTheme && (
             <div
-              className={`p-3 rounded-2xl border flex items-center justify-between ${
+              className={`p-3.5 rounded-2xl border flex items-center justify-between transition-all ${
                 isDark ? 'bg-[#121411] border-[#2D3A2B]' : 'bg-white border-[#22331E]/10'
               }`}
             >
@@ -477,38 +494,95 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
                   }`}
                 >
                   <span className="material-symbols-outlined text-lg">
-                    {isDark ? 'light_mode' : 'dark_mode'}
+                    {isDark ? 'dark_mode' : 'light_mode'}
                   </span>
                 </div>
                 <div>
                   <p className="font-serif font-bold text-xs">
-                    {isDark ? t('dark_mode_on', 'Dark Mode (Active)') : t('dark_mode_off', 'Dark Mode (Off)')}
+                    {t('theme_mode', 'Theme Appearance')}
                   </p>
                   <p className="text-[10px] opacity-70">
-                    {t('dark_mode_desc', 'Switch between heritage warm theme & deep dark mode')}
+                    {isDark
+                      ? t('dark_mode_active_label', 'Heritage Dark Mode Active')
+                      : t('light_mode_active_label', 'Warm Sandalwood Light Active')}
                   </p>
                 </div>
               </div>
 
-              <button
-                onClick={() => {
-                  sound.playTap();
-                  onToggleTheme();
-                }}
-                className={`w-12 h-6 rounded-full transition-colors relative p-0.5 ${
-                  isDark ? 'bg-[#B5451B]' : 'bg-[#DDC0B8]'
-                }`}
-              >
-                <div
-                  className={`w-5 h-5 rounded-full bg-white transition-transform ${
-                    isDark ? 'translate-x-6' : 'translate-x-0'
+              {/* Segmented Light/Dark selector buttons */}
+              <div className="flex items-center p-0.5 rounded-full border border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/5">
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (isDark) {
+                      sound.playTap();
+                      onToggleTheme();
+                    }
+                  }}
+                  className={`px-2.5 py-1 rounded-full text-[10px] font-bold flex items-center gap-1 transition-all ${
+                    !isDark
+                      ? 'bg-white text-[#B5451B] shadow-xs'
+                      : 'text-neutral-400 hover:text-white'
                   }`}
-                />
-              </button>
+                >
+                  <span className="material-symbols-outlined text-xs">light_mode</span>
+                  <span>Light</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (!isDark) {
+                      sound.playTap();
+                      onToggleTheme();
+                    }
+                  }}
+                  className={`px-2.5 py-1 rounded-full text-[10px] font-bold flex items-center gap-1 transition-all ${
+                    isDark
+                      ? 'bg-[#B5451B] text-white shadow-xs'
+                      : 'text-neutral-500 hover:text-black'
+                  }`}
+                >
+                  <span className="material-symbols-outlined text-xs">dark_mode</span>
+                  <span>Dark</span>
+                </button>
+              </div>
             </div>
           )}
 
-          {/* Setting 2: Edit Heritage Story */}
+          {/* Setting 2: Export Portfolio & Heritage as Downloadable PDF */}
+          <button
+            onClick={() => {
+              sound.playTap();
+              setIsExportPortfolioOpen(true);
+            }}
+            className={`w-full p-3.5 rounded-2xl border flex items-center justify-between text-left active:scale-98 transition-all ${
+              isDark
+                ? 'bg-[#121411] border-[#B5451B]/40 hover:bg-[#222720]'
+                : 'bg-white border-[#B5451B]/30 hover:bg-[#FAF4E8]'
+            }`}
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#B5451B] to-[#7F2A0B] text-white flex items-center justify-center shadow-xs">
+                <span className="material-symbols-outlined text-lg">picture_as_pdf</span>
+              </div>
+              <div>
+                <div className="flex items-center gap-1.5">
+                  <p className="font-serif font-bold text-xs text-[#B5451B]">
+                    {t('export_portfolio_pdf', 'Export Portfolio & Heritage (PDF)')}
+                  </p>
+                  <span className="bg-[#B5451B]/15 text-[#B5451B] text-[8px] font-bold px-1.5 py-0.2 rounded-full uppercase">
+                    New
+                  </span>
+                </div>
+                <p className="text-[10px] opacity-70">
+                  {t('export_portfolio_desc', 'Download official verifiable portfolio for exhibitions, grants & buyers')}
+                </p>
+              </div>
+            </div>
+            <span className="material-symbols-outlined text-sm text-[#B5451B]">download</span>
+          </button>
+
+          {/* Setting 3: Edit Heritage Story */}
           <button
             onClick={() => {
               sound.playTap();
@@ -707,6 +781,14 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
           </div>
         </div>
       )}
+      {/* Export Artisan Portfolio Modal */}
+      <ExportPortfolioModal
+        isOpen={isExportPortfolioOpen}
+        onClose={() => setIsExportPortfolioOpen(false)}
+        artisan={artisan}
+        products={products}
+        isDark={isDark}
+      />
     </div>
   );
 };

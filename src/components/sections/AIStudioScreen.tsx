@@ -211,20 +211,20 @@ export const AIStudioScreen: React.FC<AIStudioScreenProps> = ({
             {/* Center Focus Box Indicator */}
             <div className="relative z-10 mx-auto w-28 h-28 border-2 border-dashed border-[#E8B84B] rounded-2xl flex flex-col items-center justify-center pointer-events-none animate-pulse">
               <span className="text-[9px] uppercase tracking-widest text-[#E8B84B] font-bold bg-black/70 px-2 py-0.5 rounded">
-                Sharp Focus Locked
+                {t('focus_locked', 'Sharp Focus Locked')}
               </span>
               <span className="text-[8px] text-white/80 mt-1">
-                Exact Geometry Preserved
+                {t('geometry_preserved', 'Exact Geometry Preserved')}
               </span>
             </div>
 
             {/* Bottom Lighting Presets Bar */}
             <div className="relative z-10 flex justify-center gap-1.5 overflow-x-auto py-1">
               {[
-                { id: 'soft_cinematic', label: 'Soft Cinematic', icon: 'wb_incandescent' },
-                { id: 'clean_neutral', label: 'Clean Neutral', icon: 'wb_sunny' },
-                { id: 'texture_macro', label: 'High Detail Macro', icon: 'texture' },
-                { id: 'photorealistic', label: 'Editorial Polish', icon: 'auto_awesome' },
+                { id: 'soft_cinematic', label: t('lighting_soft_cinematic', 'Soft Cinematic'), icon: 'wb_incandescent' },
+                { id: 'clean_neutral', label: t('lighting_direct_sunlight', 'Clean Neutral'), icon: 'wb_sunny' },
+                { id: 'texture_macro', label: t('lighting_heritage_museum', 'High Detail Macro'), icon: 'texture' },
+                { id: 'photorealistic', label: t('lighting_boutique_gallery', 'Editorial Polish'), icon: 'auto_awesome' },
               ].map((light) => (
                 <button
                   key={light.id}
@@ -253,7 +253,7 @@ export const AIStudioScreen: React.FC<AIStudioScreenProps> = ({
                 setActiveTab('gallery');
               }}
               className="w-12 h-12 rounded-2xl overflow-hidden border-2 border-[#22331E]/20 shadow-xs"
-              title="Studio Gallery"
+              title={t('studio_gallery', 'Studio Gallery')}
             >
               <img
                 src={products[0].polishedImageUrl}
@@ -281,7 +281,7 @@ export const AIStudioScreen: React.FC<AIStudioScreenProps> = ({
                   ? 'bg-[#1C221A] border-[#2D3A2B] text-[#F4ECDE]'
                   : 'bg-[#EFE4CF] border-[#22331E]/10 text-[#22331E]'
               }`}
-              title="Upload Craft Photo"
+              title={t('upload_craft_photo', 'Upload Craft Photo')}
             >
               <span className="material-symbols-outlined text-2xl">upload_file</span>
             </button>
@@ -294,7 +294,7 @@ export const AIStudioScreen: React.FC<AIStudioScreenProps> = ({
               className="text-xs font-serif font-bold text-[#B5451B] hover:underline inline-flex items-center gap-1"
             >
               <span className="material-symbols-outlined text-sm">file_upload</span>
-              <span>Or upload raw workshop photo to enhance in 4K studio</span>
+              <span>{t('upload_hint', 'Or upload raw workshop photo to enhance in 4K studio')}</span>
             </button>
           </div>
         </div>
@@ -312,9 +312,13 @@ export const AIStudioScreen: React.FC<AIStudioScreenProps> = ({
               {t('enhanced_catalog', 'Enhanced Studio Catalog')}
             </h3>
             <span className="text-xs text-[#B5451B] font-sans font-bold">
-              {products.length} High-Res Crafts
+              {t('high_res_crafts_count', '{count} High-Res Crafts').replace(
+                '{count}',
+                String(products.length)
+              )}
             </span>
           </div>
+
 
           <div className="grid grid-cols-2 gap-3">
             {products.map((prod) => (

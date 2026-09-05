@@ -66,6 +66,10 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({
             return (
               <button
                 key={item.id}
+                role="tab"
+                aria-selected={isActive}
+                aria-label={label}
+                title={label}
                 onClick={() => {
                   if (currentScreen !== item.id) {
                     sound.playTap();

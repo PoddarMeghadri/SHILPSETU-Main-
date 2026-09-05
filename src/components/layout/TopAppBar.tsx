@@ -75,8 +75,10 @@ export const TopAppBar: React.FC<TopAppBarProps> = ({
                 onNavigate('home');
               }}
               className="flex items-center gap-1.5 text-[#B5451B] font-medium text-sm p-1.5 -ml-1 rounded-full hover:bg-black/5 active:scale-95 transition-all shrink-0"
+              title={t('back_to_home', 'Back to Home')}
+              aria-label={t('back_to_home', 'Back to Home')}
             >
-              <span className="material-symbols-outlined text-2xl">arrow_back</span>
+              <span className="material-symbols-outlined text-2xl rtl-flip">arrow_back</span>
               <span className="font-serif font-bold text-base tracking-tight hidden sm:inline">
                 {t('home', 'Home')}
               </span>
@@ -85,6 +87,8 @@ export const TopAppBar: React.FC<TopAppBarProps> = ({
             <button
               onClick={() => onNavigate('home')}
               className="flex items-center gap-2 text-left group shrink-0 py-0.5"
+              title={t('app_title', 'SHILPSETU')}
+              aria-label={t('app_title', 'SHILPSETU')}
             >
               {/* Official ShilpSetu Logo Icon */}
               <div className="shrink-0">
@@ -132,7 +136,8 @@ export const TopAppBar: React.FC<TopAppBarProps> = ({
                     ? 'text-[#E8B84B] bg-[#1C221A] hover:bg-[#2D3A2B]'
                     : 'text-[#22331E] bg-[#EFE4CF]/80 hover:bg-[#EAE0CC]'
                 }`}
-                title={isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+                title={isDark ? t('switch_light_mode', 'Switch to Light Mode') : t('switch_dark_mode', 'Switch to Dark Mode')}
+                aria-label={isDark ? t('switch_light_mode', 'Switch to Light Mode') : t('switch_dark_mode', 'Switch to Dark Mode')}
               >
                 <span className="material-symbols-outlined text-lg">
                   {isDark ? 'light_mode' : 'dark_mode'}
@@ -146,6 +151,8 @@ export const TopAppBar: React.FC<TopAppBarProps> = ({
                 sound.playTap();
                 setShowLangMenu(!showLangMenu);
               }}
+              title={t('select_language', 'Select Language')}
+              aria-label={t('select_language', 'Select Language')}
               className={`flex items-center gap-1 px-2.5 py-1.5 rounded-full border text-[11px] font-semibold active:scale-95 transition-all shadow-xs ${
                 isDark
                   ? 'bg-[#1C221A] border-[#2D3A2B] text-[#F4ECDE] hover:bg-[#252E22]'
@@ -194,7 +201,7 @@ export const TopAppBar: React.FC<TopAppBarProps> = ({
               <div className="relative mb-2">
                 <input
                   type="text"
-                  placeholder="Search language / भाषा खोजें..."
+                  placeholder={t('search_language_placeholder', 'Search language / भाषा खोजें...')}
                   value={langSearch}
                   onChange={(e) => setLangSearch(e.target.value)}
                   className={`w-full px-3 py-1.5 pl-8 text-xs rounded-xl border outline-none transition-colors ${

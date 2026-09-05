@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ScreenId, LanguageCode, ProductItem, ActivityItem, ArtisanProfile, StoryAvatar } from './types';
-import { INITIAL_ARTISAN, INITIAL_PRODUCTS, INITIAL_ACTIVITIES, ARTISAN_STORIES } from './data/mockData';
+import { INITIAL_ARTISAN, INITIAL_PRODUCTS, INITIAL_ACTIVITIES, ARTISAN_STORIES, DEFAULT_ARTISAN_AVATAR } from './data/mockData';
 import { TopAppBar } from './components/layout/TopAppBar';
 import { BottomNavBar } from './components/layout/BottomNavBar';
 import { OfflineBanner } from './components/layout/OfflineBanner';
@@ -40,9 +40,12 @@ export function App() {
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
+        const isOldUnsplash = parsed.avatarUrl?.includes('photo-1544005313-94ddf0286df2');
         return {
           ...INITIAL_ARTISAN,
           ...parsed,
+          avatarUrl: isOldUnsplash || !parsed.avatarUrl ? DEFAULT_ARTISAN_AVATAR : parsed.avatarUrl,
+          gender: parsed.gender || 'male',
           trustScore: parsed.trustScore ?? INITIAL_ARTISAN.trustScore ?? 98,
         };
       } catch (_) {}
@@ -134,6 +137,8 @@ export function App() {
     const updatedArtisan: ArtisanProfile = {
       ...artisan,
       name: data.fullName?.trim() || artisan.name,
+      gender: data.gender || 'male',
+      avatarUrl: DEFAULT_ARTISAN_AVATAR,
       location: userLocation,
       mobile: data.mobile?.trim() || artisan.mobile,
       email: data.email?.trim() ? data.email.trim() : undefined,

@@ -297,7 +297,9 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
           >
             {t('workshop_suite', 'Craft Workshop Suite')}
           </h3>
-          <span className="text-xs text-[#B5451B] font-sans font-bold">7 AI Modules</span>
+          <span className="text-xs text-[#B5451B] font-sans font-bold">
+            {t('seven_ai_modules', '7 AI Modules')}
+          </span>
         </div>
 
         <div className="grid grid-cols-2 gap-3">

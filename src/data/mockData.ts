@@ -32,12 +32,17 @@ export interface ArtisanProfileWithAuth extends ArtisanProfile {
   recentPhotos?: string[];
 }
 
+// Default profile picture matching nopfp.jpg uploaded by user
+export const DEFAULT_ARTISAN_AVATAR =
+  'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" width="240" height="240"><rect width="240" height="240" fill="%23C4D5DD"/><circle cx="120" cy="106" r="41" fill="%23FFFFFF"/><path d="M 31 240 C 33 194, 69 158, 120 158 C 171 158, 207 194, 209 240 Z" fill="%23FFFFFF"/></svg>';
+
 export const INITIAL_ARTISAN: ArtisanProfile & { mobile?: string; email?: string; recentPhotos?: string[] } = {
   name: 'Ranjit Prajapati',
+  gender: 'male',
   title: 'Master Clay Sculptor & Potter',
   location: 'Varanasi, Uttar Pradesh',
   craft: 'Terracotta & Heritage Pottery',
-  avatarUrl: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=400&auto=format&fit=crop&q=80',
+  avatarUrl: DEFAULT_ARTISAN_AVATAR,
   completeness: 88,
   trustScore: 98,
   udyamNumber: 'UDYAM-UP-75-0029418',
